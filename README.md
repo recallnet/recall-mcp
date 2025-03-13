@@ -131,7 +131,7 @@ The server exposes the following MCP tools:
 |-----------|-------------|------------|
 | `get_account` | Get Recall account information | None |
 | `get_balance` | Get Recall account balance information | None |
-| `buy_credit` | Buy credit for Recall account | `amount`: String (ETH amount) |
+| `buy_credit` | Buy credit for Recall account | `amount`: String (Recall Network token amount) |
 | `list_buckets` | List all buckets in Recall | None |
 | `create_bucket` | Create a new bucket in Recall | `alias`: String |
 | `get_object` | Get an object from a Recall bucket | `bucket`: String (Address), `key`: String |

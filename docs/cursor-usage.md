@@ -98,10 +98,10 @@ This will show your free credit, committed credit, and capacity used.
 To purchase credit for your Recall account:
 
 ```
-Can you buy 0.01 ETH worth of Recall credit for me?
+Can you buy 0.01 worth of Recall credit for me?
 ```
 
-Replace `0.01` with the amount of ETH you want to spend.
+Replace `0.01` with the amount of the base Recall Network token you want to spend.
 
 ### Bucket Operations
 
@@ -227,7 +227,7 @@ If you encounter issues:
 1. Ensure the MCP server is running
 2. Check your `.env` file configuration (without revealing its contents)
 3. Make sure you're connected to the correct network (testnet or mainnet)
-4. Verify you have sufficient ETH for gas fees when creating buckets or storing data
+4. Verify you have sufficient Recall Network token for gas fees when creating buckets or storing data
 
 ### If Cursor Asks for Your Private Key
 
