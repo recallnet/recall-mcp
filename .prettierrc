@@ -1,0 +1,12 @@
+{
+  "importOrder": [
+    "^.*.css",
+    "<THIRD_PARTY_MODULES>",
+    "^@recallnet/(.*)$",
+    "^@/(.*)$",
+    "^[./]"
+  ],
+  "importOrderSeparation": true,
+  "importOrderSortSpecifiers": true,
+  "plugins": ["@trivago/prettier-plugin-sort-imports"]
+}

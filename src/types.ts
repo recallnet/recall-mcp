@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Account operations
 export const AccountInfoSchema = {};
@@ -32,4 +32,4 @@ export const AddObjectSchema = {
 // Security related operations
 export const SecuritySchema = {
   query: z.string().min(1),
-}; 
+};

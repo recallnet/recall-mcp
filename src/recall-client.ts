@@ -1,17 +1,16 @@
-import { ChainName, getChain, testnet } from '@recallnet/chains';
-import { AccountInfo } from '@recallnet/sdk/account';
-import { ListResult } from '@recallnet/sdk/bucket';
-import { RecallClient, walletClientFromPrivateKey } from '@recallnet/sdk/client';
-import { CreditAccount } from '@recallnet/sdk/credit';
-import { Address, Hex, parseEther, TransactionReceipt } from 'viem';
-import { validateEnv, sanitizeSecrets } from './env.js';
+import { Address, Hex, parseEther } from "viem";
 
-type Result<T = unknown> = {
-  result: T;
-  meta?: {
-    tx?: TransactionReceipt;
-  };
-};
+import { ChainName, getChain, testnet } from "@recallnet/chains";
+import { AccountInfo } from "@recallnet/sdk/account";
+import { ListResult } from "@recallnet/sdk/bucket";
+import {
+  RecallClient,
+  walletClientFromPrivateKey,
+} from "@recallnet/sdk/client";
+import { CreditAccount } from "@recallnet/sdk/credit";
+import { Result } from "@recallnet/sdk/utils";
+
+import { validateEnv } from "./env.js";
 
 export class RecallClientManager {
   private client: RecallClient;
@@ -20,20 +19,20 @@ export class RecallClientManager {
   private constructor() {
     // Make sure environment variables are loaded and valid
     validateEnv();
-    
+
     const privateKey = process.env.RECALL_PRIVATE_KEY as Hex;
-    const network = process.env.RECALL_NETWORK || 'testnet';
+    const network = process.env.RECALL_NETWORK || "testnet";
 
     if (!privateKey) {
-      throw new Error('RECALL_PRIVATE_KEY is required');
+      throw new Error("RECALL_PRIVATE_KEY is required");
     }
 
     const chain = network ? getChain(network as ChainName) : testnet;
-    
+
     // Remove the private key from the environment after use to minimize risk of exposure
     const walletKey = privateKey;
-    process.env.RECALL_PRIVATE_KEY = '[REDACTED_AFTER_USE]';
-    
+    process.env.RECALL_PRIVATE_KEY = "[REDACTED_AFTER_USE]";
+
     const wallet = walletClientFromPrivateKey(walletKey, chain);
     this.client = new RecallClient({ walletClient: wallet });
 
@@ -52,7 +51,9 @@ export class RecallClientManager {
    * This method will throw an error if called
    */
   public getEnvironmentVariables(): never {
-    throw new Error('Security violation: This method is designed to prevent accidental exposure of sensitive environment variables.');
+    throw new Error(
+      "Security violation: This method is designed to prevent accidental exposure of sensitive environment variables.",
+    );
   }
 
   /**
@@ -60,7 +61,9 @@ export class RecallClientManager {
    * This method will throw an error if called
    */
   public getPrivateKey(): never {
-    throw new Error('Security violation: This method is designed to prevent accidental exposure of private keys.');
+    throw new Error(
+      "Security violation: This method is designed to prevent accidental exposure of private keys.",
+    );
   }
 
   /**
@@ -70,12 +73,20 @@ export class RecallClientManager {
    * @param operationName The name of the operation for logging.
    * @returns The result of the promise.
    */
-  async withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: string): Promise<T> {
+  async withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    operationName: string,
+  ): Promise<T> {
     let timeoutId: NodeJS.Timeout;
 
     const timeoutPromise = new Promise<T>((_, reject) => {
       timeoutId = setTimeout(() => {
-        reject(new Error(`${operationName} operation timed out after ${timeoutMs}ms`));
+        reject(
+          new Error(
+            `${operationName} operation timed out after ${timeoutMs}ms`,
+          ),
+        );
       }, timeoutMs);
     });
 
@@ -151,7 +162,9 @@ export class RecallClientManager {
    * @param bucketAlias The alias of the bucket to create.
    * @returns The result of the create operation.
    */
-  public async createBucket(bucketAlias: string): Promise<Result<{bucket: Address}>> {
+  public async createBucket(
+    bucketAlias: string,
+  ): Promise<Result<{ bucket: Address }>> {
     try {
       const query = await this.client.bucketManager().create({
         metadata: { alias: bucketAlias },
@@ -175,12 +188,18 @@ export class RecallClientManager {
       // Try to find the bucket by alias
       const buckets = await this.client.bucketManager().list();
       if (buckets?.result) {
-        const bucket = buckets.result.find((b) => b.metadata?.alias === bucketAlias);
+        const bucket = buckets.result.find(
+          (b) => b.metadata?.alias === bucketAlias,
+        );
         if (bucket) {
-          console.log(`Found existing bucket "${bucketAlias}" at ${bucket.addr}`);
+          console.log(
+            `Found existing bucket "${bucketAlias}" at ${bucket.addr}`,
+          );
           return bucket.addr; // Return existing bucket address
         } else {
-          console.log(`Bucket with alias "${bucketAlias}" not found, creating a new one.`);
+          console.log(
+            `Bucket with alias "${bucketAlias}" not found, creating a new one.`,
+          );
         }
       }
 
@@ -195,7 +214,9 @@ export class RecallClientManager {
         throw new Error(`Failed to create bucket: ${bucketAlias}`);
       }
 
-      console.log(`Successfully created new bucket "${bucketAlias}" at ${newBucket.bucket}`);
+      console.log(
+        `Successfully created new bucket "${bucketAlias}" at ${newBucket.bucket}`,
+      );
       return newBucket.bucket;
     } catch (error: any) {
       console.error(`Error in getOrCreateBucket: ${error.message}`);
@@ -219,10 +240,9 @@ export class RecallClientManager {
   ): Promise<Result> {
     try {
       // If data is a string, convert it to a Uint8Array
-      const dataToStore = typeof data === 'string' 
-        ? new TextEncoder().encode(data)
-        : data;
-        
+      const dataToStore =
+        typeof data === "string" ? new TextEncoder().encode(data) : data;
+
       const info = await this.client
         .bucketManager()
         .add(bucket, key, dataToStore, {
@@ -241,7 +261,10 @@ export class RecallClientManager {
    * @param key The key under which the object is stored.
    * @returns The data stored under the specified key as a Uint8Array.
    */
-  public async getObject(bucket: Address, key: string): Promise<Uint8Array | undefined> {
+  public async getObject(
+    bucket: Address,
+    key: string,
+  ): Promise<Uint8Array | undefined> {
     try {
       const info = await this.client.bucketManager().get(bucket, key);
       return info.result;
@@ -250,14 +273,17 @@ export class RecallClientManager {
       return undefined;
     }
   }
-  
+
   /**
    * Gets an object from a bucket and decodes it as a string.
    * @param bucket The address of the bucket.
    * @param key The key under which the object is stored.
    * @returns The data stored under the specified key as a string.
    */
-  public async getObjectAsString(bucket: Address, key: string): Promise<string | undefined> {
+  public async getObjectAsString(
+    bucket: Address,
+    key: string,
+  ): Promise<string | undefined> {
     try {
       const data = await this.getObject(bucket, key);
       if (data) {
@@ -269,4 +295,4 @@ export class RecallClientManager {
       return undefined;
     }
   }
-} 
+}

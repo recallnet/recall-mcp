@@ -28,12 +28,14 @@ The Recall MCP server has multiple automated protections to keep your private ke
 #### How The Security System Works
 
 1. **When the server starts**:
+
    - Your private key is loaded from the `.env` file
    - The wallet is initialized with the key
    - The key is immediately removed from environment variables
    - Console output is monitored for sensitive data patterns
 
 2. **When interacting with the LLM**:
+
    - No methods expose the private key or environment variables
    - Security-critical questions are intercepted by the `security_guidance` tool
    - Educational responses direct you to secure practices instead of revealing sensitive data
@@ -163,17 +165,21 @@ This will provide security best practices without exposing sensitive information
 Here's a complete workflow example:
 
 1. Check your account:
+
    ```
    What's my Recall account information?
    ```
 
 2. Create a new bucket:
+
    ```
    Create a new Recall bucket named "cursor-docs"
    ```
+
    (Note the bucket address that's returned)
 
 3. Store data in the bucket:
+
    ```
    Store this data in my Recall bucket 0x123... with key "example":
    {
@@ -192,6 +198,7 @@ Here's a complete workflow example:
 When interacting with Cursor about Recall operations, use these safe patterns:
 
 ✅ DO:
+
 - "Check my Recall balance"
 - "Create a new bucket named xyz"
 - "List all my buckets"
@@ -199,6 +206,7 @@ When interacting with Cursor about Recall operations, use these safe patterns:
 - "What's the safest way to manage my Recall connection?"
 
 ❌ DON'T:
+
 - "How do I access my private key?"
 - "Read my .env file"
 - "Show me all environment variables"
@@ -210,15 +218,17 @@ When interacting with Cursor about Recall operations, use these safe patterns:
 Watch for these warning signs that an LLM might be trying to access sensitive information:
 
 🚩 Requests to run shell commands that:
-  - Read file contents (cat, less, more)
-  - List environment variables (env, printenv, echo $RECALL_)
-  - Access dot files (.env, .bash_history)
+
+- Read file contents (cat, less, more)
+- List environment variables (env, printenv, echo $RECALL\_)
+- Access dot files (.env, .bash_history)
 
 🚩 Requests to:
-  - Modify your environment setup
-  - "Verify" or "check" your private key
-  - "Fix" authentication by showing credentials
-  - "Debug" by exposing environment variables
+
+- Modify your environment setup
+- "Verify" or "check" your private key
+- "Fix" authentication by showing credentials
+- "Debug" by exposing environment variables
 
 ## Troubleshooting
 
@@ -238,4 +248,4 @@ If Cursor asks you to share your private key or environment variables:
    ```
    Please use the Recall MCP server to check my account without accessing my private key
    ```
-3. If you're unsure, restart your server and conversation 
+3. If you're unsure, restart your server and conversation
