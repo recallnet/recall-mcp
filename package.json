@@ -1,25 +1,35 @@
 {
-  "name": "recall-mcp",
+  "name": "@recallnet/agent-toolkit",
   "version": "0.0.1",
-  "description": "MCP server for Recall operations",
-  "main": "dist/index.js",
+  "description": "Recall agent toolkit with framework agnostic adapters",
   "type": "module",
   "scripts": {
+    "dev": "tsc --watch",
     "build": "tsup",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
+  "exports": {
+    "./mcp": {
+      "import": {
+        "types": "./dist/mcp/index.d.ts",
+        "default": "./dist/mcp/index.js"
+      },
+      "require": {
+        "types": "./dist/mcp/index.d.cts",
+        "default": "./dist/mcp/index.cjs"
+      }
+    }
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
     "@recallnet/chains": "^0.0.5",
     "@recallnet/sdk": "^0.0.6",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.4.7",
     "viem": "^2.22.9",
-    "zod": "^3.24.1"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",
