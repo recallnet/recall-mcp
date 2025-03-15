@@ -18,7 +18,6 @@ let loaded = false;
 for (const path of envPaths) {
   if (existsSync(path)) {
     config({ path });
-    console.log(`Loaded environment variables from ${path}`);
     loaded = true;
     break;
   }
@@ -68,9 +67,7 @@ export function validateEnv() {
   }
   
   // Override the global console methods to prevent accidental logging of private keys
-  const originalConsoleLog = console.log;
   const originalConsoleError = console.error;
-  const originalConsoleInfo = console.info;
   const originalConsoleWarn = console.warn;
   
   // Detect and redact any potential private key patterns in logs
@@ -92,18 +89,10 @@ export function validateEnv() {
       return arg;
     });
   };
-  
-  // Override console methods to redact sensitive information
-  console.log = (...args: any[]) => {
-    originalConsoleLog(...redactPrivateKeys(args));
-  };
+
   
   console.error = (...args: any[]) => {
     originalConsoleError(...redactPrivateKeys(args));
-  };
-  
-  console.info = (...args: any[]) => {
-    originalConsoleInfo(...redactPrivateKeys(args));
   };
   
   console.warn = (...args: any[]) => {

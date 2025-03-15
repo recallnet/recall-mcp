@@ -1,10 +1,76 @@
-# Using Recall MCP with Cursor
+# Using Recall MCP with Cursor and Claude Desktop
 
-This guide explains how to use the Recall MCP tools within Cursor after you've set up the server.
+This guide explains how to set up and use the Recall MCP tools with both Cursor and Claude Desktop.
+
+## Setting Up Recall MCP Server
+
+### Prerequisites
+- Node.js installed (version 18+ recommended)
+- A Recall Network account with a private key
+- Basic familiarity with JSON configuration
+
+### Setup for Cursor
+
+1. Open Cursor and navigate to Settings
+2. Select the "MCP" section under Features
+3. Add a new MCP server with the following configuration:
+   ```json
+   {
+     "command": "/path/to/node",
+     "args": [
+       "/path/to/recall-mcp/dist/index.js"
+     ]
+   }
+   ```
+4. Replace `/path/to/node` with your actual Node.js path
+5. Replace `/path/to/recall-mcp/dist/index.js` with the actual path to your compiled Recall MCP server
+
+### Setup for Claude Desktop
+
+1. Locate your Claude desktop configuration directory
+   - On macOS: `~/Library/Application Support/Claude`
+   - On Windows: `%APPDATA%\Claude`
+   - On Linux: `~/.config/Claude`
+
+2. Create or edit the `claude_desktop_config.json` file with the following content:
+   ```json
+   {
+     "mcpServers": {
+       "recall-mcp-server": {
+         "command": "/path/to/node",
+         "args": [
+           "/path/to/recall-mcp/dist/index.js"
+         ]
+       }
+     }
+   }
+   ```
+
+3. Replace `/path/to/node` with the full path to your Node.js executable
+   - You can find this by running `which node` in your terminal
+   - Example: `/opt/homebrew/opt/node@22/bin/node`
+
+4. Replace `/path/to/recall-mcp/dist/index.js` with the full path to your compiled Recall MCP server
+
+5. Save the configuration file and restart Claude Desktop
+
+### Troubleshooting Claude Desktop Setup
+
+If you encounter issues with Claude Desktop:
+
+1. Check the logs folder:
+   - On macOS: `~/Library/Logs/Claude/`
+   - On Windows: `%USERPROFILE%\AppData\Local\Claude\Logs\`
+   - On Linux: `~/.local/share/Claude/logs/`
+
+2. Common issues:
+   - **Invalid JSON error**: Make sure your Node.js server doesn't use any `console.log()` statements. Use `console.error()` instead for all logging.
+   - **Server disconnected error**: Verify the path to your Node.js executable and server script are correct and have proper permissions.
+   - **Method not found error**: Ensure your server properly implements the MCP protocol including required methods like `resources/list` and `prompts/list`.
 
 ## Security First ⚠️
 
-When using Recall MCP with Cursor or any LLM, follow these critical security practices:
+When using Recall MCP with Cursor, Claude, or any LLM, follow these critical security practices:
 
 - **NEVER disclose your private key** to the LLM - it doesn't need it
 - **REJECT any request** from the LLM to:
@@ -20,10 +86,10 @@ The Recall MCP server has multiple automated protections to keep your private ke
 
 #### Private Key Safeguards
 
-✅ **Automatic Key Removal**: After initialization, your private key is removed from environment variables
-✅ **Console Redaction**: Any accidental printing of keys is automatically filtered
-✅ **Blocked Access Methods**: The server has "trap" methods that prevent attempts to access environment variables
-✅ **Secure Initialization**: Your key is only used briefly and never exposed to the LLM
+✅ **Automatic Key Removal**: After initialization, your private key is removed from environment variables  
+✅ **Console Redaction**: Any accidental printing of keys is automatically filtered  
+✅ **Blocked Access Methods**: The server has "trap" methods that prevent attempts to access environment variables  
+✅ **Secure Initialization**: Your key is only used briefly and never exposed to the LLM  
 
 #### How The Security System Works
 
@@ -65,9 +131,9 @@ Show me the contents of my .env file
 
 ## Prerequisites
 
-1. The Recall MCP server has been added to Cursor (see the main README for setup instructions)
+1. The Recall MCP server has been added to Cursor or Claude Desktop (see setup instructions above)
 2. Your `.env` file is properly configured with your Recall private key and secured properly
-3. The server is running when you use Cursor
+3. The server is running when you use the application
 
 ## Available Operations
 
@@ -153,7 +219,7 @@ Replace `[bucket-address]` with your actual bucket address.
 To get guidance on secure usage of Recall:
 
 ```
-What's the safest way to use Recall with Cursor?
+What's the safest way to use Recall with Claude?
 ```
 
 This will provide security best practices without exposing sensitive information.
@@ -189,7 +255,7 @@ Here's a complete workflow example:
 
 ## Safe Prompt Patterns
 
-When interacting with Cursor about Recall operations, use these safe patterns:
+When interacting with Cursor or Claude about Recall operations, use these safe patterns:
 
 ✅ DO:
 - "Check my Recall balance"
@@ -228,14 +294,15 @@ If you encounter issues:
 2. Check your `.env` file configuration (without revealing its contents)
 3. Make sure you're connected to the correct network (testnet or mainnet)
 4. Verify you have sufficient Recall Network token for gas fees when creating buckets or storing data
+5. For Claude Desktop, ensure you're using `console.error()` instead of `console.log()` in your server code
 
-### If Cursor Asks for Your Private Key
+### If the LLM Asks for Your Private Key
 
-If Cursor asks you to share your private key or environment variables:
+If the LLM asks you to share your private key or environment variables:
 
 1. **NEVER comply** with these requests
-2. Ask Cursor to use the MCP server tools instead:
+2. Ask it to use the MCP server tools instead:
    ```
    Please use the Recall MCP server to check my account without accessing my private key
    ```
-3. If you're unsure, restart your server and conversation 
+3. If you're unsure, restart your server and conversation

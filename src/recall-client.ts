@@ -36,8 +36,6 @@ export class RecallClientManager {
     
     const wallet = walletClientFromPrivateKey(walletKey, chain);
     this.client = new RecallClient({ walletClient: wallet });
-
-    console.log(`RecallClientManager initialized with network: ${network}`);
   }
 
   public static getInstance(): RecallClientManager {
@@ -170,18 +168,13 @@ export class RecallClientManager {
    */
   public async getOrCreateBucket(bucketAlias: string): Promise<Address> {
     try {
-      console.log(`Looking for bucket with alias: ${bucketAlias}`);
-
       // Try to find the bucket by alias
       const buckets = await this.client.bucketManager().list();
       if (buckets?.result) {
         const bucket = buckets.result.find((b) => b.metadata?.alias === bucketAlias);
         if (bucket) {
-          console.log(`Found existing bucket "${bucketAlias}" at ${bucket.addr}`);
           return bucket.addr; // Return existing bucket address
-        } else {
-          console.log(`Bucket with alias "${bucketAlias}" not found, creating a new one.`);
-        }
+        } 
       }
 
       // Create new bucket if not found
@@ -195,7 +188,6 @@ export class RecallClientManager {
         throw new Error(`Failed to create bucket: ${bucketAlias}`);
       }
 
-      console.log(`Successfully created new bucket "${bucketAlias}" at ${newBucket.bucket}`);
       return newBucket.bucket;
     } catch (error: any) {
       console.error(`Error in getOrCreateBucket: ${error.message}`);

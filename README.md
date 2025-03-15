@@ -1,6 +1,6 @@
 # Recall MCP Server
 
-This is a Model Context Protocol (MCP) server implementation for [Recall](https://docs.recall.network/) operations. It allows Cursor (and other MCP-compatible clients) to interact with Recall services for blockchain storage operations.
+This is a Model Context Protocol (MCP) server implementation for [Recall](https://docs.recall.network/) operations. It allows Cursor, Claude Desktop, and other MCP-compatible clients to interact with Recall services for blockchain storage operations.
 
 ## Features
 
@@ -92,6 +92,10 @@ npm run start
 npm run dev
 ```
 
+### Important Note for Development
+
+When developing the MCP server, use `console.error()` instead of `console.log()` for all debugging and logging. The Claude Desktop app communicates with the server via stdout, so any `console.log()` statements will interfere with this communication and cause JSON parsing errors.
+
 ## Adding to Cursor
 
 To add this MCP server to Cursor:
@@ -110,18 +114,46 @@ To add this MCP server to Cursor:
    ```
 5. Click "Save"
 
-Your configuration should look similar to this:
+## Adding to Claude Desktop
 
-<!-- 
-You can replace this comment with a screenshot of your configuration.
-Save the image to the docs/ folder and update the path below.
--->
+To add this MCP server to Claude Desktop:
 
-> **Note**: Make sure your `.env` file is properly configured with your Recall private key before using the MCP server in Cursor.
+1. Build the project first with `npm run build`
+2. Locate your Claude desktop configuration directory:
+   - On macOS: `~/Library/Application Support/Claude`
+   - On Windows: `%APPDATA%\Claude`
+   - On Linux: `~/.config/Claude`
 
-### Using the MCP Tools in Cursor
+3. Create or edit the `claude_desktop_config.json` file with the following content:
+   ```json
+   {
+     "mcpServers": {
+       "recall-mcp-server": {
+         "command": "/path/to/node",
+         "args": [
+           "/path/to/recall-mcp/dist/index.js"
+         ]
+       }
+     }
+   }
+   ```
 
-For detailed instructions and examples of how to use the Recall MCP tools within Cursor, see the [Cursor Usage Guide](docs/cursor-usage.md).
+4. Replace `/path/to/node` with the full path to your Node.js executable
+   - You can find this by running `which node` in your terminal
+   - Example: `/opt/homebrew/opt/node@22/bin/node`
+
+5. Replace `/path/to/recall-mcp/dist/index.js` with the full path to your compiled server file
+
+6. Save the configuration file and restart Claude Desktop
+
+If you encounter issues with Claude Desktop, check the logs at:
+- On macOS: `~/Library/Logs/Claude/`
+- On Windows: `%USERPROFILE%\AppData\Local\Claude\Logs\`
+- On Linux: `~/.local/share/Claude/logs/`
+
+## Using the MCP Tools
+
+For detailed instructions and examples of how to use the Recall MCP tools within Cursor or Claude Desktop, see the [Usage Guide](docs/usage.md).
 
 ## MCP Tools
 
@@ -141,4 +173,3 @@ The server exposes the following MCP tools:
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
