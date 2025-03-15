@@ -18,14 +18,16 @@ import {
   listBuckets,
   queryObjects,
 } from "./functions.js";
+import { jsonStringify } from "./util.js";
 
 /**
  * The Recall API provides a simple interface for the Recall network and SDK, designed for
  * agentic use.
  * @example
  * ```ts
+ * const privateKey = "0x...";
  * const recall = new RecallAPI(privateKey);
- * const result = await recall.run("get_account_info");
+ * const result = await recall.run("get_account_info", {});
  * ```
  */
 class RecallAPI {
@@ -57,33 +59,31 @@ class RecallAPI {
   async run(method: string, arg: any) {
     switch (method) {
       case "get_account_info":
-        return JSON.stringify(
+        return jsonStringify(
           await getAccountInfo(this.recall, this.context, arg),
         );
       case "list_buckets":
-        return JSON.stringify(
-          await listBuckets(this.recall, this.context, arg),
-        );
+        return jsonStringify(await listBuckets(this.recall, this.context, arg));
       case "get_credit_info":
-        return JSON.stringify(
+        return jsonStringify(
           await getCreditInfo(this.recall, this.context, arg),
         );
       case "buy_credit":
-        return JSON.stringify(await buyCredit(this.recall, this.context, arg));
+        return jsonStringify(await buyCredit(this.recall, this.context, arg));
       case "create_bucket":
-        return JSON.stringify(
+        return jsonStringify(
           await createBucket(this.recall, this.context, arg),
         );
       case "get_or_create_bucket":
-        return JSON.stringify(
+        return jsonStringify(
           await getOrCreateBucket(this.recall, this.context, arg),
         );
       case "add_object":
-        return JSON.stringify(await addObject(this.recall, this.context, arg));
+        return jsonStringify(await addObject(this.recall, this.context, arg));
       case "get_object":
-        return JSON.stringify(await getObject(this.recall, this.context, arg));
+        return jsonStringify(await getObject(this.recall, this.context, arg));
       case "query_objects":
-        return JSON.stringify(
+        return jsonStringify(
           await queryObjects(this.recall, this.context, arg),
         );
       default:

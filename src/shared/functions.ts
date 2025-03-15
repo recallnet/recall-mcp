@@ -20,68 +20,6 @@ import {
 } from "./parameters.js";
 
 /**
- * Serialized account information with balance and parent balance as strings
- */
-type SerializedAccountInfo = Omit<AccountInfo, "balance" | "parentBalance"> & {
-  // Balances are bigints and cannot be serialized to JSON, so we convert them to strings
-  balance: string;
-  parentBalance?: string;
-};
-
-/**
- * Serialized query result with object sizes as strings
- */
-type SerializedQueryResult = Omit<QueryResult, "objects"> & {
-  objects: {
-    key: string;
-    state: Omit<QueryResult["objects"][number]["state"], "size"> & {
-      size: string;
-    };
-  }[];
-};
-
-// TODO: determine if there's a better way to handling bigints to strings
-/**
- * Serialized credit account information with balances as strings
- */
-type SerializedCreditAccount = Omit<
-  CreditAccount,
-  | "creditFree"
-  | "creditCommitted"
-  | "lastDebitEpoch"
-  | "approvalsTo"
-  | "approvalsFrom"
-  | "maxTtl"
-  | "gasAllowance"
-> & {
-  creditFree: string;
-  creditCommitted: string;
-  lastDebitEpoch: string;
-  approvalsTo: readonly {
-    addr: `0x${string}`;
-    approval: {
-      creditLimit: string;
-      gasFeeLimit: string;
-      expiry: string;
-      creditUsed: string;
-      gasFeeUsed: string;
-    };
-  }[];
-  approvalsFrom: readonly {
-    addr: `0x${string}`;
-    approval: {
-      creditLimit: string;
-      gasFeeLimit: string;
-      expiry: string;
-      creditUsed: string;
-      gasFeeUsed: string;
-    };
-  }[];
-  maxTtl: string;
-  gasAllowance: string;
-};
-
-/**
  * Gets the account information for the current user.
  * @returns The account information.
  */
@@ -89,15 +27,11 @@ export const getAccountInfo = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof getAccountInfoParameters>,
-): Promise<SerializedAccountInfo | string> => {
+): Promise<AccountInfo | string> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
     const { result: info } = await recall.accountManager().info(address);
-    return {
-      ...info,
-      balance: info.balance.toString(),
-      parentBalance: info.parentBalance?.toString(),
-    };
+    return info;
   } catch (error: any) {
     return "Failed to get account info";
   }
@@ -129,40 +63,11 @@ export const getCreditInfo = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof getCreditInfoParameters>,
-): Promise<SerializedCreditAccount | string> => {
+): Promise<CreditAccount | string> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
     const { result } = await recall.creditManager().getAccount(address);
-    return {
-      ...result,
-      creditFree: result.creditFree.toString(),
-      creditCommitted: result.creditCommitted.toString(),
-      lastDebitEpoch: result.lastDebitEpoch.toString(),
-      approvalsTo: result.approvalsTo.map((approval) => ({
-        ...approval,
-        approval: {
-          ...approval.approval,
-          creditLimit: approval.approval.creditLimit.toString(),
-          gasFeeLimit: approval.approval.gasFeeLimit.toString(),
-          expiry: approval.approval.expiry.toString(),
-          creditUsed: approval.approval.creditUsed.toString(),
-          gasFeeUsed: approval.approval.gasFeeUsed.toString(),
-        },
-      })),
-      approvalsFrom: result.approvalsFrom.map((approval) => ({
-        ...approval,
-        approval: {
-          ...approval.approval,
-          creditLimit: approval.approval.creditLimit.toString(),
-          gasFeeLimit: approval.approval.gasFeeLimit.toString(),
-          expiry: approval.approval.expiry.toString(),
-          creditUsed: approval.approval.creditUsed.toString(),
-          gasFeeUsed: approval.approval.gasFeeUsed.toString(),
-        },
-      })),
-      maxTtl: result.maxTtl.toString(),
-      gasAllowance: result.gasAllowance.toString(),
-    };
+    return result;
   } catch (error: any) {
     return "Failed to get credit info";
   }
@@ -314,7 +219,7 @@ export const queryObjects = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof queryObjectsParameters>,
-): Promise<SerializedQueryResult | string> => {
+): Promise<QueryResult | string> => {
   try {
     const { result } = await recall
       .bucketManager()
@@ -324,15 +229,7 @@ export const queryObjects = async (
         startKey: params.startKey,
         limit: params.limit,
       });
-    // Convert `size` (a bigint) to string
-    const serializedResult = {
-      ...result,
-      objects: result.objects.map((obj) => ({
-        ...obj,
-        state: { ...obj.state, size: obj.state.size.toString() },
-      })),
-    };
-    return serializedResult;
+    return result;
   } catch (error: any) {
     return "Failed to query objects";
   }

@@ -6,7 +6,7 @@ import { Configuration, isToolAllowed } from "../shared/configuration.js";
 import { tools } from "../shared/tools.js";
 
 /**
- * Recall agent toolkit.
+ * Recall agent toolkit for the Model Context Protocol.
  * @example
  * ```ts
  * import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";

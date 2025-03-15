@@ -1,8 +1,5 @@
 import type { Address } from "viem";
 
-// TODO:
-// - `get_credit_info` fails with bigint serialization errors
-
 // import { ChainName } from "@recallnet/chains";
 
 import type { Tool } from "./tools.js";
@@ -12,6 +9,7 @@ import type { Tool } from "./tools.js";
  * action called `bucket.read` will only be allowed if a tool has defined the `bucket` as its
  * resource and has the `read` permission set.
  */
+// TODO: implement documentation resource
 export type Resource = "account" | "bucket" | "documentation";
 
 /**
