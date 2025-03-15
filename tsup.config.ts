@@ -13,6 +13,17 @@ export default defineConfig([
     }),
   },
   {
+    entry: ["src/shared/index.ts"],
+    outDir: "dist/shared",
+    format: ["cjs", "esm"],
+    dts: true,
+    sourcemap: true,
+    clean: true,
+    outExtension: ({ format }) => ({
+      js: format === "esm" ? ".js" : ".cjs",
+    }),
+  },
+  {
     entry: ["src/examples/mcp.ts"],
     outDir: "dist/examples",
     format: ["esm"],

@@ -20,6 +20,15 @@ import {
 } from "./functions.js";
 import { jsonStringify } from "./util.js";
 
+// TODOs:
+// - figure out `Context` usage (e.g., custom `network` instead of `localnet`? how do we use it with tools?)
+// - make sure typing is correct—including the return types (e.g., unify with standard return types)
+// - add documentation resource
+// - consider other actions, like transferring tokens
+// - consider `.env` patterns for private keys
+// - implement langchain or other adapters
+// - figure out barrel file exports
+
 /**
  * The Recall API provides a simple interface for the Recall network and SDK, designed for
  * agentic use.
@@ -58,18 +67,28 @@ class RecallAPI {
    */
   async run(method: string, arg: any) {
     switch (method) {
+      // Account read methods
       case "get_account_info":
         return jsonStringify(
           await getAccountInfo(this.recall, this.context, arg),
         );
-      case "list_buckets":
-        return jsonStringify(await listBuckets(this.recall, this.context, arg));
       case "get_credit_info":
         return jsonStringify(
           await getCreditInfo(this.recall, this.context, arg),
         );
+      // Account write methods
       case "buy_credit":
         return jsonStringify(await buyCredit(this.recall, this.context, arg));
+      // Bucket read methods
+      case "list_buckets":
+        return jsonStringify(await listBuckets(this.recall, this.context, arg));
+      case "get_object":
+        return jsonStringify(await getObject(this.recall, this.context, arg));
+      case "query_objects":
+        return jsonStringify(
+          await queryObjects(this.recall, this.context, arg),
+        );
+      // Bucket write methods
       case "create_bucket":
         return jsonStringify(
           await createBucket(this.recall, this.context, arg),
@@ -80,14 +99,8 @@ class RecallAPI {
         );
       case "add_object":
         return jsonStringify(await addObject(this.recall, this.context, arg));
-      case "get_object":
-        return jsonStringify(await getObject(this.recall, this.context, arg));
-      case "query_objects":
-        return jsonStringify(
-          await queryObjects(this.recall, this.context, arg),
-        );
       default:
-        throw new Error("Invalid method " + method);
+        throw new Error(`Invalid method: ${method}`);
     }
   }
 }

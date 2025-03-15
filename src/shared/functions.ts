@@ -170,7 +170,7 @@ export const addObject = async (
         ? new TextEncoder().encode(params.data)
         : params.data;
 
-    const { meta, result } = await recall
+    const { meta } = await recall
       .bucketManager()
       .add(params.bucket as Address, params.key, dataToStore, {
         overwrite: params.overwrite ?? false,

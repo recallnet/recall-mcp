@@ -21,6 +21,16 @@
         "types": "./dist/mcp/index.d.cts",
         "default": "./dist/mcp/index.cjs"
       }
+    },
+    "./shared": {
+      "import": {
+        "types": "./dist/shared/index.d.ts",
+        "default": "./dist/shared/index.js"
+      },
+      "require": {
+        "types": "./dist/shared/index.d.cts",
+        "default": "./dist/shared/index.cjs"
+      }
     }
   },
   "dependencies": {
