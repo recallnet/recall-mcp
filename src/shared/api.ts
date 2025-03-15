@@ -7,7 +7,17 @@ import {
 } from "@recallnet/sdk/client";
 
 import type { Context } from "./configuration.js";
-import { getAccountInfo } from "./functions.js";
+import {
+  addObject,
+  buyCredit,
+  createBucket,
+  getAccountInfo,
+  getCreditInfo,
+  getObject,
+  getOrCreateBucket,
+  listBuckets,
+  queryObjects,
+} from "./functions.js";
 
 class RecallAPI {
   recall: RecallClient;
@@ -25,13 +35,39 @@ class RecallAPI {
   }
 
   async run(method: string, arg: any) {
-    if (method === "get_account_info") {
-      const output = JSON.stringify(
-        await getAccountInfo(this.recall, this.context, arg),
-      );
-      return output;
-    } else {
-      throw new Error("Invalid method " + method);
+    switch (method) {
+      case "get_account_info":
+        return JSON.stringify(
+          await getAccountInfo(this.recall, this.context, arg),
+        );
+      case "list_buckets":
+        return JSON.stringify(
+          await listBuckets(this.recall, this.context, arg),
+        );
+      case "get_credit_info":
+        return JSON.stringify(
+          await getCreditInfo(this.recall, this.context, arg),
+        );
+      case "buy_credit":
+        return JSON.stringify(await buyCredit(this.recall, this.context, arg));
+      case "create_bucket":
+        return JSON.stringify(
+          await createBucket(this.recall, this.context, arg),
+        );
+      case "get_or_create_bucket":
+        return JSON.stringify(
+          await getOrCreateBucket(this.recall, this.context, arg),
+        );
+      case "add_object":
+        return JSON.stringify(await addObject(this.recall, this.context, arg));
+      case "get_object":
+        return JSON.stringify(await getObject(this.recall, this.context, arg));
+      case "query_objects":
+        return JSON.stringify(
+          await queryObjects(this.recall, this.context, arg),
+        );
+      default:
+        throw new Error("Invalid method " + method);
     }
   }
 }

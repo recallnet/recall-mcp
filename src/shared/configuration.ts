@@ -1,5 +1,7 @@
 import type { Address } from "viem";
 
+// import { ChainName } from "@recallnet/chains";
+
 import type { Tool } from "./tools.js";
 
 // Actions restrict the subset of API calls that can be made. They should
@@ -20,6 +22,7 @@ export type Context = {
   // Account is a Stripe Connected Account ID. If set, the integration will
   // make requests for this Account.
   account?: string | Address;
+  // network?: string | ChainName;
 };
 
 // Configuration provides various settings and options for the integration
