@@ -22,8 +22,17 @@ config({ path: envPath });
 
 const { RECALL_PRIVATE_KEY } = process.env;
 
+// The server will accept flags for a `--private-key` (hex string) and `--tools` (comma separated list)
 const ACCEPTED_ARGS = ["private-key", "tools"];
-const ACCEPTED_TOOLS = ["account.read", "buckets.read", "documentation.read"];
+
+// Note: since we require a private key, we only expose both read and write tools
+const ACCEPTED_TOOLS = [
+  "account.read",
+  "account.write",
+  "bucket.read",
+  "bucket.write",
+  "documentation.read",
+];
 
 export function parseArgs(args: string[]): Options {
   const options: Options = {};
@@ -85,7 +94,7 @@ function handleError(error: any) {
 export async function main() {
   const options = parseArgs(process.argv.slice(2));
 
-  // Create the StripeAgentToolkit instance
+  // Create the RecallAgentToolkit instance
   const selectedTools = options.tools!;
   const configuration: Configuration = { actions: {} };
 

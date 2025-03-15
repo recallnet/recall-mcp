@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { Actions } from "./configuration.js";
 import {
   addObjectParameters,
   buyCreditParameters,
@@ -23,18 +24,25 @@ import {
   queryObjectsPrompt,
 } from "./prompts.js";
 
+/**
+ * A tool is a function that can be called by the agent.
+ * @param method - The method name.
+ * @param name - The name of the tool.
+ * @param description - The description of the tool.
+ * @param parameters - The parameters of the tool.
+ * @param actions - The {@link Actions} of the tool.
+ */
 export type Tool = {
   method: string;
   name: string;
   description: string;
   parameters: z.ZodObject<any, any, any, any>;
-  actions: {
-    [key: string]: {
-      [action: string]: boolean;
-    };
-  };
+  actions: Actions;
 };
 
+/**
+ * A list of {@link Tool}s that can be used by the agent.
+ */
 export const tools: Tool[] = [
   {
     method: "get_account_info",
@@ -53,7 +61,7 @@ export const tools: Tool[] = [
     description: listBucketsPrompt,
     parameters: listBucketsParameters,
     actions: {
-      buckets: {
+      bucket: {
         read: true,
       },
     },
@@ -86,7 +94,7 @@ export const tools: Tool[] = [
     description: createBucketPrompt,
     parameters: createBucketParameters,
     actions: {
-      buckets: {
+      bucket: {
         write: true,
       },
     },
@@ -97,7 +105,7 @@ export const tools: Tool[] = [
     description: getOrCreateBucketPrompt,
     parameters: getOrCreateBucketParameters,
     actions: {
-      buckets: {
+      bucket: {
         read: true,
         write: true,
       },
@@ -109,7 +117,7 @@ export const tools: Tool[] = [
     description: addObjectPrompt,
     parameters: addObjectParameters,
     actions: {
-      buckets: {
+      bucket: {
         write: true,
       },
     },
@@ -120,7 +128,7 @@ export const tools: Tool[] = [
     description: getObjectPrompt,
     parameters: getObjectParameters,
     actions: {
-      buckets: {
+      bucket: {
         read: true,
       },
     },
@@ -131,7 +139,7 @@ export const tools: Tool[] = [
     description: queryObjectsPrompt,
     parameters: queryObjectsParameters,
     actions: {
-      buckets: {
+      bucket: {
         read: true,
       },
     },

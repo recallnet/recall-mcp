@@ -5,9 +5,37 @@ import RecallAPI from "../shared/api.js";
 import { Configuration, isToolAllowed } from "../shared/configuration.js";
 import { tools } from "../shared/tools.js";
 
+/**
+ * Recall agent toolkit.
+ * @example
+ * ```ts
+ * import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+ * import { RecallAgentToolkit } from "@recallnet/agent-toolkit/mcp";
+ * import { Configuration } from "@recallnet/agent-toolkit/shared";
+ *
+ * const configuration: Configuration = {
+ *   actions: {
+ *     bucket: {
+ *       read: true,
+ *       write: true,
+ *     },
+ *   },
+ *   context: {},
+ * };
+ * const privateKey = "0x...";
+ * const server = new RecallAgentToolkit(privateKey, configuration);
+ * const transport = new StdioServerTransport();
+ * await server.connect(transport);
+ * ```
+ */
 class RecallAgentToolkit extends McpServer {
   private _recall: RecallAPI;
 
+  /**
+   * Create a new RecallAgentToolkit instance.
+   * @param privateKey - The private key of the account to use.
+   * @param configuration - The {@link Configuration} to use.
+   */
   constructor({
     privateKey,
     configuration,

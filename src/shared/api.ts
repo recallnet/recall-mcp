@@ -19,10 +19,24 @@ import {
   queryObjects,
 } from "./functions.js";
 
+/**
+ * The Recall API provides a simple interface for the Recall network and SDK, designed for
+ * agentic use.
+ * @example
+ * ```ts
+ * const recall = new RecallAPI(privateKey);
+ * const result = await recall.run("get_account_info");
+ * ```
+ */
 class RecallAPI {
   recall: RecallClient;
   context: Context;
 
+  /**
+   * Create a new RecallAPI instance.
+   * @param privateKey - The private key of the account to use.
+   * @param context - The context to use.
+   */
   constructor(privateKey: string, context?: Context) {
     const walletClient = walletClientFromPrivateKey(
       privateKey as Hex,
@@ -34,6 +48,12 @@ class RecallAPI {
     this.context = context || {};
   }
 
+  /**
+   * Run a method on the Recall network.
+   * @param method - The method to run.
+   * @param arg - The arguments to pass to the method.
+   * @returns The result of the method.
+   */
   async run(method: string, arg: any) {
     switch (method) {
       case "get_account_info":

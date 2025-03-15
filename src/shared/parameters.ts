@@ -2,6 +2,7 @@ import { z } from "zod";
 
 /**
  * Parameters for the getAccountInfo function
+ * @param address - The address of the account to get account info for (optional)
  */
 export const getAccountInfoParameters = z.object({
   address: z
@@ -13,6 +14,7 @@ export const getAccountInfoParameters = z.object({
 
 /**
  * Parameters for the listBuckets function
+ * @param address - The address of the account to list buckets for (optional)
  */
 export const listBucketsParameters = z.object({
   address: z
@@ -26,6 +28,7 @@ export const listBucketsParameters = z.object({
 
 /**
  * Parameters for the getCreditInfo function
+ * @param address - The address of the account to get credit info for (optional)
  */
 export const getCreditInfoParameters = z.object({
   address: z
@@ -37,6 +40,8 @@ export const getCreditInfoParameters = z.object({
 
 /**
  * Parameters for the buyCredit function
+ * @param amount - The amount of credit to buy
+ * @param to - The address of the account to buy credit for (optional)
  */
 export const buyCreditParameters = z.object({
   amount: z.string().describe("The amount of credit to buy"),
@@ -51,6 +56,8 @@ export const buyCreditParameters = z.object({
 
 /**
  * Parameters for the createBucket function
+ * @param bucketAlias - The alias of the bucket to create
+ * @param metadata - The metadata to store with the bucket (optional)
  */
 export const createBucketParameters = z.object({
   bucketAlias: z.string().describe("The alias of the bucket to create"),
@@ -62,6 +69,8 @@ export const createBucketParameters = z.object({
 
 /**
  * Parameters for the getOrCreateBucket function
+ * @param bucketAlias - The alias of the bucket to retrieve or create
+ * @param metadata - The metadata to store with the bucket (optional)
  */
 export const getOrCreateBucketParameters = z.object({
   bucketAlias: z
@@ -75,6 +84,11 @@ export const getOrCreateBucketParameters = z.object({
 
 /**
  * Parameters for the addObject function
+ * @param bucket - The address of the bucket
+ * @param key - The key under which to store the object
+ * @param data - The data to store as a string or Uint8Array
+ * @param metadata - The metadata to store with the object
+ * @param overwrite - Whether to overwrite existing data at that key
  */
 export const addObjectParameters = z.object({
   bucket: z
@@ -97,6 +111,9 @@ export const addObjectParameters = z.object({
 
 /**
  * Parameters for the getObject function
+ * @param bucket - The address of the bucket
+ * @param key - The key under which the object is stored
+ * @param outputType - The type of the output (default: uint8array)
  */
 export const getObjectParameters = z.object({
   bucket: z
@@ -112,6 +129,11 @@ export const getObjectParameters = z.object({
 
 /**
  * Parameters for the queryObjects function
+ * @param bucket - The address of the bucket
+ * @param prefix - The prefix of the objects to query (optional)
+ * @param delimiter - The delimiter of the objects to query (optional)
+ * @param startKey - The starting key of the objects to query (optional)
+ * @param limit - The maximum number of objects to query (optional)
  */
 export const queryObjectsParameters = z.object({
   bucket: z

@@ -28,6 +28,9 @@ type SerializedAccountInfo = Omit<AccountInfo, "balance" | "parentBalance"> & {
   parentBalance?: string;
 };
 
+/**
+ * Serialized query result with object sizes as strings
+ */
 type SerializedQueryResult = Omit<QueryResult, "objects"> & {
   objects: {
     key: string;
@@ -38,6 +41,9 @@ type SerializedQueryResult = Omit<QueryResult, "objects"> & {
 };
 
 // TODO: determine if there's a better way to handling bigints to strings
+/**
+ * Serialized credit account information with balances as strings
+ */
 type SerializedCreditAccount = Omit<
   CreditAccount,
   | "creditFree"
@@ -97,6 +103,10 @@ export const getAccountInfo = async (
   }
 };
 
+/**
+ * Lists all buckets for the current user.
+ * @returns The list of buckets.
+ */
 export const listBuckets = async (
   recall: RecallClient,
   context: Context,
@@ -111,6 +121,10 @@ export const listBuckets = async (
   }
 };
 
+/**
+ * Gets the credit information for the current user.
+ * @returns The credit information.
+ */
 export const getCreditInfo = async (
   recall: RecallClient,
   context: Context,
@@ -154,6 +168,10 @@ export const getCreditInfo = async (
   }
 };
 
+/**
+ * Buys credit for the current user.
+ * @returns The transaction hash of the credit purchase.
+ */
 export const buyCredit = async (
   recall: RecallClient,
   context: Context,
@@ -170,6 +188,10 @@ export const buyCredit = async (
   }
 };
 
+/**
+ * Creates a new bucket for the current user.
+ * @returns The bucket address and transaction hash.
+ */
 export const createBucket = async (
   recall: RecallClient,
   context: Context,
@@ -192,6 +214,10 @@ export const createBucket = async (
   }
 };
 
+/**
+ * Gets or creates a bucket for the current user.
+ * @returns The bucket address and transaction hash.
+ */
 export const getOrCreateBucket = async (
   recall: RecallClient,
   context: Context,
@@ -223,6 +249,10 @@ export const getOrCreateBucket = async (
   }
 };
 
+/**
+ * Adds an object to a bucket.
+ * @returns The transaction hash of the object addition.
+ */
 export const addObject = async (
   recall: RecallClient,
   context: Context,
@@ -250,6 +280,10 @@ export const addObject = async (
   }
 };
 
+/**
+ * Gets an object from a bucket.
+ * @returns The object.
+ */
 export const getObject = async (
   recall: RecallClient,
   context: Context,
@@ -272,6 +306,10 @@ export const getObject = async (
   }
 };
 
+/**
+ * Queries objects in a bucket.
+ * @returns The query result.
+ */
 export const queryObjects = async (
   recall: RecallClient,
   context: Context,
@@ -286,7 +324,7 @@ export const queryObjects = async (
         startKey: params.startKey,
         limit: params.limit,
       });
-    // Convert `size` to string
+    // Convert `size` (a bigint) to string
     const serializedResult = {
       ...result,
       objects: result.objects.map((obj) => ({
