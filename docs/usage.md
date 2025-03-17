@@ -9,6 +9,36 @@ This guide explains how to set up and use the Recall MCP tools with both Cursor 
 - A Recall Network account with a private key
 - Basic familiarity with JSON configuration
 
+### Configuration Methods
+
+You have two options for configuring the Recall MCP server:
+
+#### Method 1: Using environment variables in Cursor/Claude config (Recommended)
+The recommended approach is to configure the server through Cursor or Claude Desktop with environment variables (see setup instructions below).
+
+#### Method 2: Using a .env file (Fallback)
+If you prefer using a .env file, or are running the server directly:
+
+1. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Edit the `.env` file with your private key:
+   ```
+   RECALL_PRIVATE_KEY=your_private_key_here
+   RECALL_NETWORK=testnet
+   ```
+
+3. Secure your .env file:
+   ```bash
+   chmod 600 .env
+   ```
+
+Note: The private key can be provided with or without the "0x" prefix - both formats work.
+
+The server will only load from the .env file if the required environment variables are not already present in the system environment.
+
 ### Setup for Cursor
 
 1. Open Cursor and navigate to Settings

@@ -70,21 +70,42 @@ The MCP server is designed to hide your private key from the LLM, but you must f
    ```
 3. Choose one of these configuration methods:
 
-   ### Method 1: Using a .env file
-   Create a `.env` file with your Recall private key:
-   ```
-   RECALL_PRIVATE_KEY=your_private_key_here
-   RECALL_NETWORK=testnet
-   ```
+   ### Method 1: Using environment variables in Cursor/Claude config (Recommended)
+   The recommended approach is to provide environment variables directly in your Cursor or Claude Desktop configuration. This is more secure and eliminates the need for a .env file.
+   
+   - The server will automatically use these environment variables when provided through the configuration.
+   - See the "Adding to Cursor" and "Adding to Claude Desktop" sections below for specific setup instructions.
+
+   ### Method 2: Using a .env file (Fallback)
+   If you prefer to use a .env file, or are running the server directly without Cursor/Claude, you can create one:
+   
+   1. Copy the example environment file:
+      ```bash
+      cp .env.example .env
+      ```
+   
+   2. Edit the `.env` file with your private key:
+      ```
+      RECALL_PRIVATE_KEY=your_private_key_here
+      RECALL_NETWORK=testnet
+      ```
+   
+   3. Secure your .env file:
+      ```bash
+      chmod 600 .env
+      ```
+   
    Note: The private key can be provided with or without the "0x" prefix - both formats work.
    
-   And secure your .env file:
-   ```bash
-   chmod 600 .env
-   ```
+   The server will only attempt to load from the .env file if the required environment variables (RECALL_PRIVATE_KEY) are not already present in the environment.
 
-   ### Method 2: Using environment variables directly
-   You can also provide the environment variables directly when configuring the MCP server in Cursor or Claude Desktop (see below).
+## Environment Variable Precedence
+
+The Recall MCP server uses the following order of precedence for environment variables:
+
+1. Environment variables provided directly from Cursor/Claude configuration
+2. Environment variables from a .env file (if present and #1 is not available)
+3. Default values for optional variables (e.g., RECALL_NETWORK defaults to "testnet")
 
 ## Usage
 

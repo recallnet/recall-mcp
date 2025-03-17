@@ -1,8 +1,47 @@
-// env.ts - Simplified to work exclusively with environment variables
+// env.ts - Enhanced to support both direct environment variables and .env file as fallback
+import { config } from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+import { existsSync } from 'fs';
 
 // Only log a debug message
 if (process.env.DEBUG) {
-  console.error('Using environment variables from Cursor config.json');
+  console.error('Starting environment setup...');
+}
+
+// Check if the required environment variables are already set (from Cursor/Claude/Windsurf config)
+const hasRequiredEnvVars = !!process.env.RECALL_PRIVATE_KEY;
+
+// Only attempt to load .env file if required variables are not already set
+if (!hasRequiredEnvVars) {
+  // Get the directory of the current module
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+
+  // Try to find and load the .env file from various possible locations
+  const envPaths = [
+    resolve(process.cwd(), '.env'),
+    resolve(__dirname, '../.env'),
+    resolve(__dirname, '../../.env')
+  ];
+
+  let loaded = false;
+  for (const path of envPaths) {
+    if (existsSync(path)) {
+      config({ path });
+      loaded = true;
+      if (process.env.DEBUG) {
+        console.error(`Loaded environment from .env file at: ${path}`);
+      }
+      break;
+    }
+  }
+
+  if (!loaded && process.env.DEBUG) {
+    console.error('No .env file found. Using environment variables directly.');
+  }
+} else if (process.env.DEBUG) {
+  console.error('Using environment variables from configuration.');
 }
 
 // Sanitize sensitive environment variables for logging and display
