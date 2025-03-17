@@ -22,6 +22,26 @@
         "default": "./dist/mcp/index.cjs"
       }
     },
+    "./langchain": {
+      "import": {
+        "types": "./dist/langchain/index.d.ts",
+        "default": "./dist/langchain/index.js"
+      },
+      "require": {
+        "types": "./dist/langchain/index.d.cts",
+        "default": "./dist/langchain/index.cjs"
+      }
+    },
+    "./openai": {
+      "import": {
+        "types": "./dist/openai/index.d.ts",
+        "default": "./dist/openai/index.js"
+      },
+      "require": {
+        "types": "./dist/openai/index.d.cts",
+        "default": "./dist/openai/index.cjs"
+      }
+    },
     "./shared": {
       "import": {
         "types": "./dist/shared/index.d.ts",
@@ -34,12 +54,17 @@
     }
   },
   "dependencies": {
+    "@langchain/core": "^0.3.42",
+    "@langchain/openai": "^0.4.4",
     "@modelcontextprotocol/sdk": "^1.7.0",
     "@recallnet/chains": "^0.0.5",
     "@recallnet/sdk": "^0.0.6",
     "dotenv": "^16.4.7",
+    "langchain": "^0.3.19",
+    "openai": "^4.87.3",
     "viem": "^2.22.9",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.24.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.22.0",

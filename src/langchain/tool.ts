@@ -6,7 +6,7 @@ import { z } from "zod";
 import RecallAPI from "../shared/api.js";
 
 /**
- * A LangChain compatible structured tool for the Recall agent API.
+ * A LangChain compatible structured tool for the Recall agent toolkit.
  * @example
  * ```ts
  * const tool = new RecallTool(recallAPI, "get_account_info", "Get account info", getAccountInfoParameters);
