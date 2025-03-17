@@ -2,8 +2,8 @@ import { defineConfig } from "tsup";
 
 export default defineConfig([
   {
-    entry: ["src/mcp/index.ts"],
-    outDir: "dist/mcp",
+    entry: ["src/ai-sdk/index.ts"],
+    outDir: "dist/ai-sdk",
     format: ["cjs", "esm"],
     dts: true,
     sourcemap: true,
@@ -15,6 +15,17 @@ export default defineConfig([
   {
     entry: ["src/langchain/index.ts"],
     outDir: "dist/langchain",
+    format: ["cjs", "esm"],
+    dts: true,
+    sourcemap: true,
+    clean: true,
+    outExtension: ({ format }) => ({
+      js: format === "esm" ? ".js" : ".cjs",
+    }),
+  },
+  {
+    entry: ["src/mcp/index.ts"],
+    outDir: "dist/mcp",
     format: ["cjs", "esm"],
     dts: true,
     sourcemap: true,
@@ -46,7 +57,7 @@ export default defineConfig([
     }),
   },
   {
-    entry: ["src/examples/mcp.ts"],
+    entry: ["src/examples/ai-sdk.ts"],
     outDir: "dist/examples",
     format: ["esm"],
     dts: true,
@@ -54,6 +65,13 @@ export default defineConfig([
   },
   {
     entry: ["src/examples/langchain.ts"],
+    outDir: "dist/examples",
+    format: ["esm"],
+    dts: true,
+    clean: true,
+  },
+  {
+    entry: ["src/examples/mcp.ts"],
     outDir: "dist/examples",
     format: ["esm"],
     dts: true,

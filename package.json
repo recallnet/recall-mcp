@@ -12,14 +12,14 @@
     "format:check": "prettier --check ."
   },
   "exports": {
-    "./mcp": {
+    "./ai-sdk": {
       "import": {
-        "types": "./dist/mcp/index.d.ts",
-        "default": "./dist/mcp/index.js"
+        "types": "./dist/ai-sdk/index.d.ts",
+        "default": "./dist/ai-sdk/index.js"
       },
       "require": {
-        "types": "./dist/mcp/index.d.cts",
-        "default": "./dist/mcp/index.cjs"
+        "types": "./dist/ai-sdk/index.d.cts",
+        "default": "./dist/ai-sdk/index.cjs"
       }
     },
     "./langchain": {
@@ -30,6 +30,16 @@
       "require": {
         "types": "./dist/langchain/index.d.cts",
         "default": "./dist/langchain/index.cjs"
+      }
+    },
+    "./mcp": {
+      "import": {
+        "types": "./dist/mcp/index.d.ts",
+        "default": "./dist/mcp/index.js"
+      },
+      "require": {
+        "types": "./dist/mcp/index.d.cts",
+        "default": "./dist/mcp/index.cjs"
       }
     },
     "./openai": {
@@ -54,14 +64,17 @@
     }
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.2.5",
     "@langchain/core": "^0.3.42",
     "@langchain/openai": "^0.4.4",
     "@modelcontextprotocol/sdk": "^1.7.0",
     "@recallnet/chains": "^0.0.5",
     "@recallnet/sdk": "^0.0.6",
+    "ai": "^4.1.61",
     "dotenv": "^16.4.7",
     "langchain": "^0.3.19",
     "openai": "^4.87.3",
+    "openai\n": "link:@ai-sdk/openai\n",
     "viem": "^2.22.9",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.4"
