@@ -25,11 +25,6 @@ import {
 } from "./functions.js";
 import { jsonStringify } from "./util.js";
 
-// TODOs:
-// - add documentation search resource
-// - implement langchain or other adapters
-// - figure out barrel file exports
-
 /**
  * The Recall API provides a simple interface for the Recall network and SDK, designed for
  * agentic use.

@@ -74,7 +74,6 @@
     "dotenv": "^16.4.7",
     "langchain": "^0.3.19",
     "openai": "^4.87.3",
-    "openai\n": "link:@ai-sdk/openai\n",
     "viem": "^2.22.9",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.4"
