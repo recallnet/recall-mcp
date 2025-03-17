@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
+import { z } from "zod";
 
 import RecallAPI from "../shared/api.js";
 import { Configuration, isToolAllowed } from "../shared/configuration.js";
@@ -28,7 +29,7 @@ import { tools } from "../shared/tools.js";
  * await server.connect(transport);
  * ```
  */
-class RecallAgentToolkit extends McpServer {
+export default class RecallAgentToolkit extends McpServer {
   private _recall: RecallAPI;
 
   /**
@@ -51,16 +52,19 @@ class RecallAgentToolkit extends McpServer {
 
     this._recall = new RecallAPI(privateKey, configuration.context);
 
-    const filteredTools = tools.filter((tool: any) =>
+    const filteredTools = tools.filter((tool) =>
       isToolAllowed(tool, configuration),
     );
 
-    filteredTools.forEach((tool: any) => {
+    filteredTools.forEach((tool) => {
       this.tool(
         tool.method,
         tool.description,
         tool.parameters.shape,
-        async (arg: any, _extra: RequestHandlerExtra) => {
+        async (
+          arg: z.infer<typeof tool.parameters>,
+          _extra: RequestHandlerExtra,
+        ) => {
           const result = await this._recall.run(tool.method, arg);
           return {
             content: [
@@ -75,5 +79,3 @@ class RecallAgentToolkit extends McpServer {
     });
   }
 }
-
-export default RecallAgentToolkit;

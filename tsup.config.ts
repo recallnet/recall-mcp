@@ -30,4 +30,11 @@ export default defineConfig([
     dts: true,
     clean: true,
   },
+  {
+    entry: ["src/examples/langchain.ts"],
+    outDir: "dist/examples",
+    format: ["esm"],
+    dts: true,
+    clean: true,
+  },
 ]);
