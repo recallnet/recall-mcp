@@ -98,6 +98,22 @@ const RECALL_TOOLS: Tool[] = [
     }
   },
   {
+    name: "list_bucket_objects",
+    description: "List all objects in a Recall bucket",
+    inputSchema: {
+      type: "object",
+      properties: {
+        bucket: {
+          type: "string",
+          minLength: 1
+        }
+      },
+      required: ["bucket"],
+      additionalProperties: false,
+      $schema: "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  {
     name: "get_object",
     description: "Get an object from a Recall bucket",
     inputSchema: {
@@ -295,6 +311,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         } catch (error: any) {
           console.error('Error in create_bucket:', error);
+          throw error;
+        }
+      }
+
+      case "list_bucket_objects": {
+        if (!args || typeof args !== "object" || !("bucket" in args)) {
+          throw new Error("Invalid arguments for list_bucket_objects");
+        }
+        
+        try {
+          const bucket = args.bucket as string;
+          const objects = await recallClient.listBucketObjects(bucket as Address);
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  bucket,
+                  objects: objects.map(obj => ({
+                    key: obj.key,
+                    metadata: obj.metadata || null
+                  }))
+                }, null, 2),
+              },
+            ],
+            isError: false,
+          };
+        } catch (error: any) {
+          console.error('Error in list_bucket_objects:', error);
           throw error;
         }
       }

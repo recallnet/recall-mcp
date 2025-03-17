@@ -18,6 +18,7 @@ This MCP server provides the following operations:
 - **Object Operations**
   - Get objects from buckets
   - Add objects to buckets
+  - List objects within buckets
 
 ## Security ⚠️
 
@@ -166,6 +167,7 @@ The server exposes the following MCP tools:
 | `buy_credit` | Buy credit for Recall account | `amount`: String (Recall Network token amount) |
 | `list_buckets` | List all buckets in Recall | None |
 | `create_bucket` | Create a new bucket in Recall | `alias`: String |
+| `list_bucket_objects` | List all objects in a Recall bucket | `bucket`: String (Address) |
 | `get_object` | Get an object from a Recall bucket | `bucket`: String (Address), `key`: String |
 | `add_object` | Add an object to a Recall bucket | `bucket`: String (Address), `key`: String, `data`: String, `overwrite?`: Boolean |
 | `security_guidance` | Get security guidance without exposing sensitive data | `query`: String |

@@ -261,4 +261,26 @@ export class RecallClientManager {
       return undefined;
     }
   }
+
+  /**
+   * Lists all objects in a bucket.
+   * @param bucket The address of the bucket.
+   * @returns An array of objects containing key and metadata.
+   */
+  public async listBucketObjects(bucket: Address): Promise<{key: string, metadata?: any}[]> {
+    try {
+      const queryResult = await this.client.bucketManager().query(bucket);
+      if (!queryResult.result?.objects.length) {
+        return [];
+      }
+      
+      return queryResult.result.objects.map(obj => ({
+        key: obj.key,
+        metadata: obj.state?.metadata || undefined
+      }));
+    } catch (error: any) {
+      console.error(`Error listing bucket objects: ${error.message}`);
+      throw error;
+    }
+  }
 } 
