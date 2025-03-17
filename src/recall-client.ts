@@ -4,7 +4,7 @@ import { ListResult } from '@recallnet/sdk/bucket';
 import { RecallClient, walletClientFromPrivateKey } from '@recallnet/sdk/client';
 import { CreditAccount } from '@recallnet/sdk/credit';
 import { Address, Hex, parseEther, TransactionReceipt } from 'viem';
-import { validateEnv, sanitizeSecrets } from './env.js';
+import { validateEnv } from './env.js';
 
 type Result<T = unknown> = {
   result: T;
@@ -21,12 +21,17 @@ export class RecallClientManager {
     // Make sure environment variables are loaded and valid
     validateEnv();
     
-    const privateKey = process.env.RECALL_PRIVATE_KEY as Hex;
+    const privateKeyRaw = process.env.RECALL_PRIVATE_KEY;
     const network = process.env.RECALL_NETWORK || 'testnet';
 
-    if (!privateKey) {
+    if (!privateKeyRaw) {
       throw new Error('RECALL_PRIVATE_KEY is required');
     }
+
+    // Format the private key: If it doesn't start with "0x", prepend it
+    const privateKey = privateKeyRaw.startsWith('0x') 
+      ? privateKeyRaw as Hex 
+      : `0x${privateKeyRaw}` as Hex;
 
     const chain = network ? getChain(network as ChainName) : testnet;
     

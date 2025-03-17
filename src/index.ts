@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Add debug logging to help diagnose startup issues
+console.error("Starting Recall MCP Server...");
+console.error(`Environment variables present: ${Object.keys(process.env).filter(k => !k.includes('KEY') && !k.includes('SECRET')).join(', ')}`);
+
 // Import environment setup first to ensure variables are loaded
 import './env.js';
 

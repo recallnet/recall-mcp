@@ -16,41 +16,73 @@ This guide explains how to set up and use the Recall MCP tools with both Cursor 
 3. Add a new MCP server with the following configuration:
    ```json
    {
-     "command": "/path/to/node",
+     "command": "node",
      "args": [
        "/path/to/recall-mcp/dist/index.js"
-     ]
+     ],
+     "env": {
+       "RECALL_PRIVATE_KEY": "your-private-key-here",
+       "RECALL_NETWORK": "testnet"
+     }
    }
    ```
-4. Replace `/path/to/node` with your actual Node.js path
-5. Replace `/path/to/recall-mcp/dist/index.js` with the actual path to your compiled Recall MCP server
+4. Replace `/path/to/recall-mcp/dist/index.js` with the actual path to your compiled Recall MCP server
+5. For the `RECALL_PRIVATE_KEY`, you can provide it with or without the "0x" prefix - both formats work
+
+Alternatively, you can configure Cursor using the `.cursor/mcp.json` file in your home directory:
+
+```json
+{
+  "mcpServers": {
+    "recall-mcp": {
+      "name": "Recall MCP",
+      "type": "command",
+      "command": "node",
+      "args": [
+        "/path/to/recall-mcp/dist/index.js"
+      ],
+      "env": {
+        "RECALL_PRIVATE_KEY": "your-private-key-here",
+        "RECALL_NETWORK": "testnet",
+        "DEBUG": "true"
+      }
+    }
+  }
+}
+```
 
 ### Setup for Claude Desktop
 
-1. Locate your Claude desktop configuration directory
-   - On macOS: `~/Library/Application Support/Claude`
-   - On Windows: `%APPDATA%\Claude`
-   - On Linux: `~/.config/Claude`
+1. Locate your Claude Desktop configuration file at:
+   - On macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - On Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - On Linux: `~/.config/Claude/claude_desktop_config.json`
 
 2. Create or edit the `claude_desktop_config.json` file with the following content:
    ```json
    {
      "mcpServers": {
        "recall-mcp-server": {
-         "command": "/path/to/node",
+         "name": "Recall MCP",
+         "type": "command",
+         "command": "node",
          "args": [
            "/path/to/recall-mcp/dist/index.js"
-         ]
+         ],
+         "env": {
+           "RECALL_PRIVATE_KEY": "your-private-key-here",
+           "RECALL_NETWORK": "testnet",
+           "DEBUG": "true"
+         }
        }
      }
    }
    ```
 
-3. Replace `/path/to/node` with the full path to your Node.js executable
-   - You can find this by running `which node` in your terminal
-   - Example: `/opt/homebrew/opt/node@22/bin/node`
+3. Replace `/path/to/recall-mcp/dist/index.js` with the full path to your compiled server file
+   - Example: `/Users/username/recall-mcp/dist/index.js`
 
-4. Replace `/path/to/recall-mcp/dist/index.js` with the full path to your compiled Recall MCP server
+4. For the `RECALL_PRIVATE_KEY`, you can provide it with or without the "0x" prefix - both formats work
 
 5. Save the configuration file and restart Claude Desktop
 
@@ -67,6 +99,7 @@ If you encounter issues with Claude Desktop:
    - **Invalid JSON error**: Make sure your Node.js server doesn't use any `console.log()` statements. Use `console.error()` instead for all logging.
    - **Server disconnected error**: Verify the path to your Node.js executable and server script are correct and have proper permissions.
    - **Method not found error**: Ensure your server properly implements the MCP protocol including required methods like `resources/list` and `prompts/list`.
+   - **Authentication failures**: Double-check your private key is correctly formatted and not corrupted when copied
 
 ## Security First ⚠️
 

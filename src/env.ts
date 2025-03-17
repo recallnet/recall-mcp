@@ -1,34 +1,11 @@
-import { config } from 'dotenv';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-import { existsSync } from 'fs';
+// env.ts - Simplified to work exclusively with environment variables
 
-// Get the directory of the current module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Try to find and load the .env file from various possible locations
-const envPaths = [
-  resolve(process.cwd(), '.env'),
-  resolve(__dirname, '../.env'),
-  resolve(__dirname, '../../.env')
-];
-
-let loaded = false;
-for (const path of envPaths) {
-  if (existsSync(path)) {
-    config({ path });
-    loaded = true;
-    break;
-  }
-}
-
-if (!loaded) {
-  console.warn('Could not find .env file. Make sure it exists in the project root.');
+// Only log a debug message
+if (process.env.DEBUG) {
+  console.error('Using environment variables from Cursor config.json');
 }
 
 // Sanitize sensitive environment variables for logging and display
-// This function will redact the full value, showing only a few safe characters
 export function sanitizeSecrets(obj: Record<string, any>) {
   const result = { ...obj };
   
@@ -59,37 +36,42 @@ export function sanitizeSecrets(obj: Record<string, any>) {
 
 // Verify that required environment variables are set
 export function validateEnv() {
-  const requiredVars = ['RECALL_PRIVATE_KEY', 'RECALL_NETWORK'];
+  const requiredVars = ['RECALL_PRIVATE_KEY'];
+  const recommendedVars = ['RECALL_NETWORK'];
+  
+  // Check for required variables
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
     throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
   }
   
-  // Override the global console methods to prevent accidental logging of private keys
+  // Check for recommended variables
+  const missingRecommended = recommendedVars.filter(varName => !process.env[varName]);
+  
+  if (missingRecommended.length > 0 && process.env.DEBUG) {
+    console.warn(`Missing recommended environment variables: ${missingRecommended.join(', ')}. Using defaults.`);
+  }
+  
+  // Set up security for console output
   const originalConsoleError = console.error;
   const originalConsoleWarn = console.warn;
   
-  // Detect and redact any potential private key patterns in logs
   const redactPrivateKeys = (args: any[]) => {
     return args.map(arg => {
       if (typeof arg === 'string') {
-        // Redact anything that looks like a private key (hex string of appropriate length)
         return arg.replace(/0x[a-fA-F0-9]{64}/g, '[REDACTED_PRIVATE_KEY]')
-                  // Also redact if someone tries to log environment variables directly
                   .replace(/(RECALL_PRIVATE_KEY|private_key|privatekey)=([^&\s]+)/gi, '$1=[REDACTED]');
       } else if (arg && typeof arg === 'object') {
-        // For objects, sanitize any keys that might contain sensitive data
         try {
           return sanitizeSecrets(arg);
         } catch (e) {
-          return arg; // If we can't process it, return as is
+          return arg;
         }
       }
       return arg;
     });
   };
-
   
   console.error = (...args: any[]) => {
     originalConsoleError(...redactPrivateKeys(args));
@@ -98,4 +80,4 @@ export function validateEnv() {
   console.warn = (...args: any[]) => {
     originalConsoleWarn(...redactPrivateKeys(args));
   };
-} 
+}

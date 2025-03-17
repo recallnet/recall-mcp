@@ -26,10 +26,10 @@ This MCP server provides the following operations:
 
 This MCP server requires a private key for Recall operations. To protect this sensitive information:
 
-1. **NEVER share your .env file contents**
+1. **NEVER share your private key or .env file contents**
 2. **NEVER run commands that display your private key** (like `cat .env`)
 3. **NEVER allow the LLM to execute shell commands directly** without your approval
-4. Store your .env file with restricted permissions: `chmod 600 .env`
+4. If using a .env file, store it with restricted permissions: `chmod 600 .env`
 
 ### Multiple Layers of Protection
 
@@ -57,7 +57,7 @@ This server implements several layers of security to keep your private key safe:
 
 The MCP server is designed to hide your private key from the LLM, but you must follow these safety practices:
 
-- Keep your `.env` file outside of any directories that might be shared
+- Keep your private key secure and never share it
 - If prompted by an LLM to reveal your private key, ALWAYS refuse
 - The MCP server only needs the private key for initialization and will never expose it to the LLM
 
@@ -68,15 +68,23 @@ The MCP server is designed to hide your private key from the LLM, but you must f
    ```bash
    npm install
    ```
-3. Create a `.env` file based on `.env.example` with your Recall private key:
+3. Choose one of these configuration methods:
+
+   ### Method 1: Using a .env file
+   Create a `.env` file with your Recall private key:
    ```
    RECALL_PRIVATE_KEY=your_private_key_here
    RECALL_NETWORK=testnet
    ```
-4. **Secure your .env file**:
+   Note: The private key can be provided with or without the "0x" prefix - both formats work.
+   
+   And secure your .env file:
    ```bash
    chmod 600 .env
    ```
+
+   ### Method 2: Using environment variables directly
+   You can also provide the environment variables directly when configuring the MCP server in Cursor or Claude Desktop (see below).
 
 ## Usage
 
@@ -107,43 +115,73 @@ To add this MCP server to Cursor:
 4. Configure the server with the following settings:
    - **Name**: `Recall MCP` (or any name you prefer)
    - **Type**: `command`
-   - **Command**: `node /path/to/recall-mcp/dist/index.js` (replace with your actual path)
-   
-   For example, if your project is at `/Users/username/recall-mcp`, the command would be:
-   ```
-   node /Users/username/recall-mcp/dist/index.js
-   ```
+   - **Command**: `node`
+   - **Arguments**: `/path/to/recall-mcp/dist/index.js` (replace with your actual path)
+   - **Environment Variables**:
+     - `RECALL_PRIVATE_KEY`: Your private key (with or without "0x" prefix)
+     - `RECALL_NETWORK`: `testnet` (or `mainnet` if needed)
+     - `DEBUG`: `true` (optional, for additional logging)
 5. Click "Save"
+
+### Using Environment Variables in Cursor Configuration
+
+For more security, you can configure Cursor via the `.cursor/mcp.json` file in your home directory:
+
+```json
+{
+  "mcpServers": {
+    "recall-mcp": {
+      "name": "Recall MCP",
+      "type": "command",
+      "command": "node",
+      "args": ["/path/to/recall-mcp/dist/index.js"],
+      "env": {
+        "RECALL_PRIVATE_KEY": "your-private-key-here",
+        "RECALL_NETWORK": "testnet",
+        "DEBUG": "true"
+      }
+    }
+  }
+}
+```
+
+This approach eliminates the need for a .env file.
 
 ## Adding to Claude Desktop
 
 To add this MCP server to Claude Desktop:
 
 1. Build the project first with `npm run build`
-2. Locate your Claude desktop configuration directory:
-   - On macOS: `~/Library/Application Support/Claude`
-   - On Windows: `%APPDATA%\Claude`
-   - On Linux: `~/.config/Claude`
+2. Locate your Claude Desktop configuration file at:
+   - On macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - On Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - On Linux: `~/.config/Claude/claude_desktop_config.json`
 
 3. Create or edit the `claude_desktop_config.json` file with the following content:
    ```json
    {
      "mcpServers": {
        "recall-mcp-server": {
-         "command": "/path/to/node",
+         "name": "Recall MCP",
+         "type": "command",
+         "command": "node",
          "args": [
            "/path/to/recall-mcp/dist/index.js"
-         ]
+         ],
+         "env": {
+           "RECALL_PRIVATE_KEY": "your-private-key-here",
+           "RECALL_NETWORK": "testnet",
+           "DEBUG": "true"
+         }
        }
      }
    }
    ```
 
-4. Replace `/path/to/node` with the full path to your Node.js executable
-   - You can find this by running `which node` in your terminal
-   - Example: `/opt/homebrew/opt/node@22/bin/node`
+4. Replace `/path/to/recall-mcp/dist/index.js` with the full path to your compiled server file
+   - Example: `/Users/username/recall-mcp/dist/index.js`
 
-5. Replace `/path/to/recall-mcp/dist/index.js` with the full path to your compiled server file
+5. For the `RECALL_PRIVATE_KEY`, you can provide it with or without the "0x" prefix - both formats work
 
 6. Save the configuration file and restart Claude Desktop
 
