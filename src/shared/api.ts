@@ -26,8 +26,6 @@ import {
 import { jsonStringify } from "./util.js";
 
 // TODOs:
-// - figure out `Context` usage (e.g., custom `network` instead of `localnet`? how do we use it with tools?)
-// - make sure typing is correct—including the return types (e.g., unify with standard return types)
 // - add documentation resource
 // - consider other actions, like transferring tokens
 // - consider `.env` patterns for private keys
@@ -47,13 +45,20 @@ import { jsonStringify } from "./util.js";
 class RecallAPI {
   recall: RecallClient;
   context: Context;
+  serialize: (data: any) => string;
 
   /**
    * Create a new RecallAPI instance.
    * @param privateKey - The private key of the account to use.
    * @param context - The context to use, including the network name (e.g., `testnet` or `localnet`).
+   * @param serializer - The serializer to use, which formats the return value of the method.
+   * Defaults to `jsonStringify` (i.e.,`JSON.stringify` with `bigint`s converted to strings).
    */
-  constructor(privateKey: string, context?: Context) {
+  constructor(
+    privateKey: string,
+    context?: Context,
+    serializer: (data: any) => string = jsonStringify,
+  ) {
     const chain =
       context?.network !== undefined &&
       checkChainName(context.network as ChainName)
@@ -64,6 +69,7 @@ class RecallAPI {
 
     this.recall = recallClient;
     this.context = context || {};
+    this.serialize = serializer;
   }
 
   /**
@@ -76,36 +82,38 @@ class RecallAPI {
     switch (method) {
       // Account read methods
       case "get_account_info":
-        return jsonStringify(
+        return this.serialize(
           await getAccountInfo(this.recall, this.context, arg),
         );
       case "get_credit_info":
-        return jsonStringify(
+        return this.serialize(
           await getCreditInfo(this.recall, this.context, arg),
         );
       // Account write methods
       case "buy_credit":
-        return jsonStringify(await buyCredit(this.recall, this.context, arg));
+        return this.serialize(await buyCredit(this.recall, this.context, arg));
       // Bucket read methods
       case "list_buckets":
-        return jsonStringify(await listBuckets(this.recall, this.context, arg));
+        return this.serialize(
+          await listBuckets(this.recall, this.context, arg),
+        );
       case "get_object":
-        return jsonStringify(await getObject(this.recall, this.context, arg));
+        return this.serialize(await getObject(this.recall, this.context, arg));
       case "query_objects":
-        return jsonStringify(
+        return this.serialize(
           await queryObjects(this.recall, this.context, arg),
         );
       // Bucket write methods
       case "create_bucket":
-        return jsonStringify(
+        return this.serialize(
           await createBucket(this.recall, this.context, arg),
         );
       case "get_or_create_bucket":
-        return jsonStringify(
+        return this.serialize(
           await getOrCreateBucket(this.recall, this.context, arg),
         );
       case "add_object":
-        return jsonStringify(await addObject(this.recall, this.context, arg));
+        return this.serialize(await addObject(this.recall, this.context, arg));
       default:
         throw new Error(`Invalid method: ${method}`);
     }

@@ -8,3 +8,24 @@ export function jsonStringify(obj: any) {
     typeof value === "bigint" ? value.toString() : value,
   );
 }
+
+/**
+ * The result of a function that succeeds.
+ */
+export type SuccessResult<T> = {
+  success: true;
+  result: T;
+};
+
+/**
+ * The result of a function that fails.
+ */
+export type ErrorResult = {
+  success: false;
+  error: string;
+};
+
+/**
+ * The result of a function.
+ */
+export type Result<T> = SuccessResult<T> | ErrorResult;

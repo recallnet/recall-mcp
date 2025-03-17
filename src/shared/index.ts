@@ -40,6 +40,7 @@ import {
   listBucketsPrompt,
   queryObjectsPrompt,
 } from "./prompts.js";
+import { Result } from "./util.js";
 
 export {
   RecallAPI,
@@ -76,4 +77,5 @@ export {
   type Permission,
   type Actions,
   type Context,
+  type Result,
 };

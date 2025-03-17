@@ -18,6 +18,7 @@ import {
   listBucketsParameters,
   queryObjectsParameters,
 } from "./parameters.js";
+import { Result } from "./util.js";
 
 /**
  * Gets the account information for the current user.
@@ -27,13 +28,19 @@ export const getAccountInfo = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof getAccountInfoParameters>,
-): Promise<AccountInfo | string> => {
+): Promise<Result<AccountInfo>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
-    const { result: info } = await recall.accountManager().info(address);
-    return info;
+    const { result } = await recall.accountManager().info(address);
+    if (!result) {
+      return { success: false, error: "Failed to get account info" };
+    }
+    return { success: true, result };
   } catch (error: any) {
-    return "Failed to get account info";
+    return {
+      success: false,
+      error: `Failed to get account info: ${error.message}`,
+    };
   }
 };
 
@@ -45,13 +52,19 @@ export const listBuckets = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof listBucketsParameters>,
-): Promise<ListResult | string> => {
+): Promise<Result<ListResult>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
     const { result } = await recall.bucketManager().list(address);
-    return result;
+    if (!result) {
+      return { success: false, error: "Failed to list buckets" };
+    }
+    return { success: true, result };
   } catch (error: any) {
-    return "Failed to list buckets";
+    return {
+      success: false,
+      error: `Failed to list buckets: ${error.message}`,
+    };
   }
 };
 
@@ -63,13 +76,19 @@ export const getCreditInfo = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof getCreditInfoParameters>,
-): Promise<CreditAccount | string> => {
+): Promise<Result<CreditAccount>> => {
   try {
     const address = params.address ? (params.address as Address) : undefined;
     const { result } = await recall.creditManager().getAccount(address);
-    return result;
+    if (!result) {
+      return { success: false, error: "Failed to get credit info" };
+    }
+    return { success: true, result };
   } catch (error: any) {
-    return "Failed to get credit info";
+    return {
+      success: false,
+      error: `Failed to get credit info: ${error.message}`,
+    };
   }
 };
 
@@ -81,15 +100,18 @@ export const buyCredit = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof buyCreditParameters>,
-): Promise<string> => {
+): Promise<Result<string>> => {
   try {
     const to = params.to ? (params.to as Address) : undefined;
     const { meta } = await recall
       .creditManager()
       .buy(parseEther(params.amount), to);
-    return meta?.tx?.transactionHash ?? "Failed to buy credit";
+    if (!meta?.tx?.transactionHash) {
+      return { success: false, error: "Transaction not found" };
+    }
+    return { success: true, result: meta.tx.transactionHash };
   } catch (error: any) {
-    return "Failed to buy credit";
+    return { success: false, error: `Failed to buy credit: ${error.message}` };
   }
 };
 
@@ -101,21 +123,24 @@ export const createBucket = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof createBucketParameters>,
-): Promise<{ bucket: Address; tx: string } | string> => {
+): Promise<Result<{ bucket: Address; txHash: string }>> => {
   try {
     const metadata = params.metadata ?? {};
     const { meta, result } = await recall.bucketManager().create({
       metadata: { alias: params.bucketAlias, ...metadata },
     });
     if (!meta?.tx || !result) {
-      return "Failed to create bucket";
+      return { success: false, error: "Failed to create bucket" };
     }
     return {
-      bucket: result.bucket,
-      tx: meta.tx.transactionHash,
+      success: true,
+      result: { bucket: result.bucket, txHash: meta.tx.transactionHash },
     };
   } catch (error: any) {
-    return "Failed to create bucket";
+    return {
+      success: false,
+      error: `Failed to create bucket: ${error.message}`,
+    };
   }
 };
 
@@ -127,7 +152,7 @@ export const getOrCreateBucket = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof getOrCreateBucketParameters>,
-): Promise<{ bucket: Address; tx: string } | string> => {
+): Promise<Result<{ bucket: Address; tx: string }>> => {
   try {
     // Try to find the bucket by alias
     const buckets = await recall.bucketManager().list();
@@ -136,7 +161,7 @@ export const getOrCreateBucket = async (
         (b) => b.metadata?.alias === params.bucketAlias,
       );
       if (bucket) {
-        return bucket.addr;
+        return { success: true, result: { bucket: bucket.addr, tx: "" } };
       }
     }
 
@@ -146,11 +171,17 @@ export const getOrCreateBucket = async (
       metadata: { alias: params.bucketAlias, ...metadata },
     });
     if (!meta?.tx || !result) {
-      return "Failed to create bucket";
+      return { success: false, error: "Transaction not found" };
     }
-    return { bucket: result.bucket, tx: meta.tx.transactionHash };
+    return {
+      success: true,
+      result: { bucket: result.bucket, tx: meta.tx.transactionHash },
+    };
   } catch (error: any) {
-    return "Failed to get or create bucket";
+    return {
+      success: false,
+      error: `Failed to get or create bucket: ${error.message}`,
+    };
   }
 };
 
@@ -162,7 +193,7 @@ export const addObject = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof addObjectParameters>,
-): Promise<string> => {
+): Promise<Result<{ txHash: string }>> => {
   try {
     const metadata = params.metadata ?? {};
     const dataToStore =
@@ -177,11 +208,11 @@ export const addObject = async (
         metadata: { ...metadata },
       });
     if (!meta?.tx) {
-      return "Failed to add object";
+      return { success: false, error: "Transaction not found" };
     }
-    return meta.tx.transactionHash;
+    return { success: true, result: { txHash: meta.tx.transactionHash } };
   } catch (error: any) {
-    return "Failed to add object";
+    return { success: false, error: `Failed to add object: ${error.message}` };
   }
 };
 
@@ -193,21 +224,21 @@ export const getObject = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof getObjectParameters>,
-): Promise<Uint8Array | string> => {
+): Promise<Result<string | Uint8Array>> => {
   try {
     const { result } = await recall
       .bucketManager()
       .get(params.bucket as Address, params.key);
 
     if (!result) {
-      return "Object not found";
+      return { success: false, error: "Object not found" };
     }
 
-    return params.outputType === "string"
-      ? new TextDecoder().decode(result)
-      : result;
+    return params.outputType === "string" || params.outputType === undefined
+      ? { success: true, result: new TextDecoder().decode(result) }
+      : { success: true, result };
   } catch (error: any) {
-    return "Failed to get object";
+    return { success: false, error: `Failed to get object: ${error.message}` };
   }
 };
 
@@ -219,7 +250,7 @@ export const queryObjects = async (
   recall: RecallClient,
   context: Context,
   params: z.infer<typeof queryObjectsParameters>,
-): Promise<QueryResult | string> => {
+): Promise<Result<QueryResult>> => {
   try {
     const { result } = await recall
       .bucketManager()
@@ -229,8 +260,14 @@ export const queryObjects = async (
         startKey: params.startKey,
         limit: params.limit,
       });
-    return result;
+    if (!result) {
+      return { success: false, error: "Failed to query objects" };
+    }
+    return { success: true, result };
   } catch (error: any) {
-    return "Failed to query objects";
+    return {
+      success: false,
+      error: `Failed to query objects: ${error.message}`,
+    };
   }
 };
