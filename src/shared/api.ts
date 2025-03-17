@@ -26,9 +26,7 @@ import {
 import { jsonStringify } from "./util.js";
 
 // TODOs:
-// - add documentation resource
-// - consider other actions, like transferring tokens
-// - consider `.env` patterns for private keys
+// - add documentation search resource
 // - implement langchain or other adapters
 // - figure out barrel file exports
 
@@ -42,10 +40,10 @@ import { jsonStringify } from "./util.js";
  * const result = await recall.run("get_account_info", {});
  * ```
  */
-class RecallAPI {
-  recall: RecallClient;
-  context: Context;
-  serialize: (data: any) => string;
+export default class RecallAPI {
+  private _recall: RecallClient;
+  private _context: Context;
+  private _serialize: (data: any) => string;
 
   /**
    * Create a new RecallAPI instance.
@@ -67,9 +65,9 @@ class RecallAPI {
     const walletClient = walletClientFromPrivateKey(privateKey as Hex, chain);
     const recallClient = new RecallClient({ walletClient });
 
-    this.recall = recallClient;
-    this.context = context || {};
-    this.serialize = serializer;
+    this._recall = recallClient;
+    this._context = context || {};
+    this._serialize = serializer;
   }
 
   /**
@@ -82,42 +80,46 @@ class RecallAPI {
     switch (method) {
       // Account read methods
       case "get_account_info":
-        return this.serialize(
-          await getAccountInfo(this.recall, this.context, arg),
+        return this._serialize(
+          await getAccountInfo(this._recall, this._context, arg),
         );
       case "get_credit_info":
-        return this.serialize(
-          await getCreditInfo(this.recall, this.context, arg),
+        return this._serialize(
+          await getCreditInfo(this._recall, this._context, arg),
         );
       // Account write methods
       case "buy_credit":
-        return this.serialize(await buyCredit(this.recall, this.context, arg));
+        return this._serialize(
+          await buyCredit(this._recall, this._context, arg),
+        );
       // Bucket read methods
       case "list_buckets":
-        return this.serialize(
-          await listBuckets(this.recall, this.context, arg),
+        return this._serialize(
+          await listBuckets(this._recall, this._context, arg),
         );
       case "get_object":
-        return this.serialize(await getObject(this.recall, this.context, arg));
+        return this._serialize(
+          await getObject(this._recall, this._context, arg),
+        );
       case "query_objects":
-        return this.serialize(
-          await queryObjects(this.recall, this.context, arg),
+        return this._serialize(
+          await queryObjects(this._recall, this._context, arg),
         );
       // Bucket write methods
       case "create_bucket":
-        return this.serialize(
-          await createBucket(this.recall, this.context, arg),
+        return this._serialize(
+          await createBucket(this._recall, this._context, arg),
         );
       case "get_or_create_bucket":
-        return this.serialize(
-          await getOrCreateBucket(this.recall, this.context, arg),
+        return this._serialize(
+          await getOrCreateBucket(this._recall, this._context, arg),
         );
       case "add_object":
-        return this.serialize(await addObject(this.recall, this.context, arg));
+        return this._serialize(
+          await addObject(this._recall, this._context, arg),
+        );
       default:
         throw new Error(`Invalid method: ${method}`);
     }
   }
 }
-
-export default RecallAPI;

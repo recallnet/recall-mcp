@@ -6,7 +6,7 @@ import type { Tool } from "./tools.js";
  * resource and has the `read` permission set.
  */
 // TODO: implement documentation resource
-export type Resource = "account" | "bucket" | "documentation";
+export type Resource = "account" | "bucket" /*| "documentation"*/;
 
 /**
  * Permissions are used alongside resources to restrict how a tool can be used. Write operations

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { config } from "dotenv";
+import { existsSync } from "fs";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
@@ -23,9 +24,18 @@ type Options = {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load .env file from the project root (two levels up if in build directory)
-const envPath = resolve(__dirname, "..", "..", ".env");
-config({ path: envPath });
+// Load .env file from the project root (depending on build location)
+const envPaths = [
+  resolve(process.cwd(), ".env"),
+  resolve(__dirname, "../.env"),
+  resolve(__dirname, "../../.env"),
+];
+for (const path of envPaths) {
+  if (existsSync(path)) {
+    config({ path });
+    break;
+  }
+}
 
 const { RECALL_PRIVATE_KEY, RECALL_NETWORK } = process.env;
 
@@ -38,7 +48,7 @@ const ACCEPTED_TOOLS = [
   "account.write",
   "bucket.read",
   "bucket.write",
-  "documentation.read",
+  // "documentation.read", // TODO: add documentation search resource
 ];
 
 /**
