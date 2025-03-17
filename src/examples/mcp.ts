@@ -5,11 +5,18 @@ import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
 
 import { RecallAgentToolkit } from "../mcp/index.js";
-import { Configuration } from "../shared/configuration.js";
+import { Configuration, Resource } from "../shared/configuration.js";
 
+/**
+ * Options for the Recall MCP server
+ * @param tools - The tools to enable
+ * @param privateKey - The private key to use
+ * @param network - The Recall network to use: `testnet` or `localnet` (defaults to `testnet`)
+ */
 type Options = {
   tools?: string[];
   privateKey?: string;
+  network?: string;
 };
 
 // Get the directory where this script is located
@@ -20,10 +27,10 @@ const __dirname = dirname(__filename);
 const envPath = resolve(__dirname, "..", "..", ".env");
 config({ path: envPath });
 
-const { RECALL_PRIVATE_KEY } = process.env;
+const { RECALL_PRIVATE_KEY, RECALL_NETWORK } = process.env;
 
-// The server will accept flags for a `--private-key` (hex string) and `--tools` (comma separated list)
-const ACCEPTED_ARGS = ["private-key", "tools"];
+// The server will accept flags for a `--private-key` (hex string), `--tools` (comma separated list), and `--network` (e.g., `testnet` or `localnet`)
+const ACCEPTED_ARGS = ["private-key", "tools", "network"];
 
 // Note: since we require a private key, we only expose both read and write tools
 const ACCEPTED_TOOLS = [
@@ -34,6 +41,13 @@ const ACCEPTED_TOOLS = [
   "documentation.read",
 ];
 
+/**
+ * Parse the command line arguments
+ * @param args - The command line arguments—one or more of:
+ *  `--tools=all` (or `--tools=resource.action`, like `--tools=account.read`),
+ *  `--private-key=$KEY`, or `--network=$NETWORK`
+ * @returns The parsed options
+ */
 export function parseArgs(args: string[]): Options {
   const options: Options = {};
 
@@ -45,6 +59,8 @@ export function parseArgs(args: string[]): Options {
         options.tools = value?.split(",");
       } else if (key == "private-key") {
         options.privateKey = value;
+      } else if (key == "network") {
+        options.network = value;
       } else {
         throw new Error(
           `Invalid argument: ${key}. Accepted arguments are: ${ACCEPTED_ARGS.join(
@@ -57,7 +73,9 @@ export function parseArgs(args: string[]): Options {
 
   // Check if required tools arguments is present
   if (!options.tools) {
-    throw new Error("The --tools arguments must be provided.");
+    throw new Error(
+      "The --tools argument must be provided (e.g., `--tools=all` or `--tools=account.read`).",
+    );
   }
 
   // Validate tools against accepted enum values
@@ -83,6 +101,10 @@ export function parseArgs(args: string[]): Options {
   }
   options.privateKey = privateKey;
 
+  // If not set, the `RecallAgentToolkit` will default to `testnet`
+  const network = options.network || RECALL_NETWORK;
+  options.network = network;
+
   return options;
 }
 
@@ -94,32 +116,44 @@ function handleError(error: any) {
 export async function main() {
   const options = parseArgs(process.argv.slice(2));
 
-  // Create the RecallAgentToolkit instance
+  // Create the `RecallAgentToolkit` instance
   const selectedTools = options.tools!;
-  const configuration: Configuration = { actions: {} };
+  const configuration: Configuration = { actions: {}, context: {} };
 
   if (selectedTools.includes("all")) {
     ACCEPTED_TOOLS.forEach((tool) => {
-      const [product, action] = tool.split(".");
-      // @ts-ignore
-      configuration.actions[product] = {
-        // @ts-ignore
-        ...configuration.actions[product],
-        // @ts-ignore
+      const [resource, action] = tool.split(".");
+      if (!resource || !action) {
+        throw new Error(
+          `Invalid tool: ${tool}. Tool must be in the format of "resource.action".`,
+        );
+      }
+      configuration.actions[resource as Resource] = {
+        ...configuration.actions[resource as Resource],
         [action]: true,
       };
     });
   } else {
-    selectedTools.forEach((tool: any) => {
-      const [product, action] = tool.split(".");
-      // @ts-ignore
-      configuration.actions[product] = { [action]: true };
+    selectedTools.forEach((tool) => {
+      const [resource, action] = tool.split(".");
+      if (!resource || !action) {
+        throw new Error(
+          `Invalid tool: ${tool}. Tool must be in the format of "resource.action".`,
+        );
+      }
+      if (!configuration.actions) {
+        configuration.actions = {};
+      }
+      configuration.actions[resource as Resource] = {
+        ...configuration.actions[resource as Resource],
+        [action]: true,
+      };
     });
   }
 
-  // Append stripe account to configuration if provided
-  if (options.privateKey) {
-    configuration.context = { account: options.privateKey };
+  // Append custom Recall network to configuration if provided
+  if (options.network) {
+    configuration.context = { network: options.network };
   }
 
   const server = new RecallAgentToolkit({

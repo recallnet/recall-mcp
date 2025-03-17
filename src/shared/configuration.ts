@@ -1,7 +1,3 @@
-import type { Address } from "viem";
-
-// import { ChainName } from "@recallnet/chains";
-
 import type { Tool } from "./tools.js";
 
 /**
@@ -20,9 +16,10 @@ export type Resource = "account" | "bucket" | "documentation";
 export type Permission = "read" | "write";
 
 /**
- * Actions are used to restrict the subset of API calls that can be made. Setting a permission
- * to false prevents the related "tool" from being considered. For example, if no private key is
- * provided, the `write` permission should be set to false.
+ * Actions are used to restrict the subset of API calls that can be made through a {@link Resource}
+ * and {@link Permission}. Setting a permission to false prevents the related "tool" from being
+ * considered. For example, if no private key is provided, the `write` permission should be set to
+ * false.
  * @example
  * ```ts
  * const actions: Actions = {
@@ -41,11 +38,12 @@ export type Actions = {
 // TODO: figure out what we need to pass here
 /**
  * Context are settings that are applied to all requests made by the integration.
- * @param account - An EVM account address.
+ * @param network - The Recall network to use for the integration (defaults to `testnet`).
+ * @param [key: string] - Additional custom settings that are applied to the integration.
  */
 export type Context = {
-  account?: string | Address;
-  // network?: string | ChainName;
+  network?: string;
+  [key: string]: any;
 };
 
 /**
@@ -55,8 +53,8 @@ export type Context = {
  * @param context - {@link Context} are settings that are applied to all requests made by the integration.
  */
 export type Configuration = {
-  actions?: Actions;
-  context?: Context;
+  actions: Actions;
+  context: Context;
 };
 
 /**

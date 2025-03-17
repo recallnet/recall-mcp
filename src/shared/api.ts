@@ -1,6 +1,11 @@
 import { Hex } from "viem";
 
-import { localnet } from "@recallnet/chains";
+import {
+  ChainName,
+  checkChainName,
+  getChain,
+  testnet,
+} from "@recallnet/chains";
 import {
   RecallClient,
   walletClientFromPrivateKey,
@@ -46,13 +51,15 @@ class RecallAPI {
   /**
    * Create a new RecallAPI instance.
    * @param privateKey - The private key of the account to use.
-   * @param context - The context to use.
+   * @param context - The context to use, including the network name (e.g., `testnet` or `localnet`).
    */
   constructor(privateKey: string, context?: Context) {
-    const walletClient = walletClientFromPrivateKey(
-      privateKey as Hex,
-      localnet,
-    );
+    const chain =
+      context?.network !== undefined &&
+      checkChainName(context.network as ChainName)
+        ? getChain(context.network as ChainName)
+        : testnet;
+    const walletClient = walletClientFromPrivateKey(privateKey as Hex, chain);
     const recallClient = new RecallClient({ walletClient });
 
     this.recall = recallClient;
