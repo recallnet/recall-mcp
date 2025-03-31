@@ -4,7 +4,7 @@ import { ListResult } from '@recallnet/sdk/bucket';
 import { RecallClient, walletClientFromPrivateKey } from '@recallnet/sdk/client';
 import { CreditAccount } from '@recallnet/sdk/credit';
 import { Address, Hex, parseEther, TransactionReceipt } from 'viem';
-import { validateEnv } from './env.js';
+import { validateEnv, logger, getPrivateKey, config } from './env.js';
 
 type Result<T = unknown> = {
   result: T;
@@ -21,8 +21,8 @@ export class RecallClientManager {
     // Make sure environment variables are loaded and valid
     validateEnv();
     
-    const privateKeyRaw = process.env.RECALL_PRIVATE_KEY;
-    const network = process.env.RECALL_NETWORK || 'testnet';
+    const privateKeyRaw = getPrivateKey();
+    const network = config.RECALL_NETWORK || 'testnet';
 
     if (!privateKeyRaw) {
       throw new Error('RECALL_PRIVATE_KEY is required');
@@ -37,7 +37,6 @@ export class RecallClientManager {
     
     // Remove the private key from the environment after use to minimize risk of exposure
     const walletKey = privateKey;
-    process.env.RECALL_PRIVATE_KEY = '[REDACTED_AFTER_USE]';
     
     const wallet = walletClientFromPrivateKey(walletKey, chain);
     this.client = new RecallClient({ walletClient: wallet });
@@ -101,7 +100,7 @@ export class RecallClientManager {
       const info = await this.client.accountManager().info();
       return info.result;
     } catch (error: any) {
-      console.error(`Error getting account info: ${error.message}`);
+      logger.error(`Error getting account info: ${error.message}`);
       throw error;
     }
   }
@@ -115,7 +114,7 @@ export class RecallClientManager {
       const info = await this.client.bucketManager().list();
       return info.result;
     } catch (error: any) {
-      console.error(`Error listing buckets: ${error.message}`);
+      logger.error(`Error listing buckets: ${error.message}`);
       throw error;
     }
   }
@@ -129,7 +128,7 @@ export class RecallClientManager {
       const info = await this.client.creditManager().getAccount();
       return info.result;
     } catch (error: any) {
-      console.error(`Error getting credit info: ${error.message}`);
+      logger.error(`Error getting credit info: ${error.message}`);
       throw error;
     }
   }
@@ -144,7 +143,7 @@ export class RecallClientManager {
       const info = await this.client.creditManager().buy(parseEther(amount));
       return info;
     } catch (error: any) {
-      console.error(`Error buying credit: ${error.message}`);
+      logger.error(`Error buying credit: ${error.message}`);
       throw error;
     }
   }
@@ -161,7 +160,7 @@ export class RecallClientManager {
       });
       return query;
     } catch (error: any) {
-      console.error(`Error creating bucket: ${error.message}`);
+      logger.error(`Error creating bucket: ${error.message}`);
       throw error;
     }
   }
@@ -189,13 +188,13 @@ export class RecallClientManager {
 
       const newBucket = query.result;
       if (!newBucket) {
-        console.error(`Failed to create new bucket with alias: ${bucketAlias}`);
+        logger.error(`Failed to create new bucket with alias: ${bucketAlias}`);
         throw new Error(`Failed to create bucket: ${bucketAlias}`);
       }
 
       return newBucket.bucket;
     } catch (error: any) {
-      console.error(`Error in getOrCreateBucket: ${error.message}`);
+      logger.error(`Error in getOrCreateBucket: ${error.message}`);
       throw error;
     }
   }
@@ -227,7 +226,7 @@ export class RecallClientManager {
         });
       return info;
     } catch (error: any) {
-      console.error(`Error adding object: ${error.message}`);
+      logger.error(`Error adding object: ${error.message}`);
       throw error;
     }
   }
@@ -243,8 +242,8 @@ export class RecallClientManager {
       const info = await this.client.bucketManager().get(bucket, key);
       return info.result;
     } catch (error: any) {
-      console.error(`Error getting object: ${error.message}`);
-      return undefined;
+      logger.error(`Error getting object: ${error.message}`);
+      throw error;
     }
   }
   
@@ -262,7 +261,7 @@ export class RecallClientManager {
       }
       return undefined;
     } catch (error: any) {
-      console.error(`Error getting object as string: ${error.message}`);
+      logger.error(`Error getting object as string: ${error.message}`);
       return undefined;
     }
   }
@@ -284,7 +283,7 @@ export class RecallClientManager {
         metadata: obj.state?.metadata || undefined
       }));
     } catch (error: any) {
-      console.error(`Error listing bucket objects: ${error.message}`);
+      logger.error(`Error listing bucket objects: ${error.message}`);
       throw error;
     }
   }

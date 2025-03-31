@@ -1,12 +1,4 @@
-#!/usr/bin/env node
-
-// Add debug logging to help diagnose startup issues
-console.error("Starting Recall MCP Server...");
-console.error(`Environment variables present: ${Object.keys(process.env).filter(k => !k.includes('KEY') && !k.includes('SECRET')).join(', ')}`);
-
-// Import environment setup first to ensure variables are loaded
-import './env.js';
-
+import { logger } from './env.js';
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -210,7 +202,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: false,
           };
         } catch (error: any) {
-          console.error('Error in get_account:', error);
+          logger.error('Error in get_account:', error);
           throw error;
         }
       }
@@ -233,7 +225,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: false,
           };
         } catch (error: any) {
-          console.error('Error in get_balance:', error);
+          logger.error('Error in get_balance:', error);
           throw error;
         }
       }
@@ -261,7 +253,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: false,
           };
         } catch (error: any) {
-          console.error('Error in buy_credit:', error);
+          logger.error('Error in buy_credit:', error);
           throw error;
         }
       }
@@ -286,7 +278,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: false,
           };
         } catch (error: any) {
-          console.error('Error in list_buckets:', error);
+          logger.error('Error in list_buckets:', error);
           throw error;
         }
       }
@@ -314,7 +306,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: false,
           };
         } catch (error: any) {
-          console.error('Error in create_bucket:', error);
+          logger.error('Error in create_bucket:', error);
           throw error;
         }
       }
@@ -344,7 +336,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: false,
           };
         } catch (error: any) {
-          console.error('Error in list_bucket_objects:', error);
+          logger.error('Error in list_bucket_objects:', error);
           throw error;
         }
       }
@@ -374,7 +366,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: false,
           };
         } catch (error: any) {
-          console.error('Error in get_object:', error);
+          logger.error('Error in get_object:', error);
           throw error;
         }
       }
@@ -407,7 +399,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             isError: false,
           };
         } catch (error: any) {
-          console.error('Error in add_object:', error);
+          logger.error('Error in add_object:', error);
           throw error;
         }
       }
@@ -485,7 +477,7 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Recall MCP Server running on stdio");
+  logger.error("Recall MCP Server running on stdio");
 }
 
-main().catch(console.error);
+main().catch(logger.error);
