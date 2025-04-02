@@ -42,7 +42,7 @@ This server implements several layers of security to keep your private key safe:
 
 #### 2. Log Protection
 - Automatic redaction of any private key patterns in logs
-- Console output is filtered to replace private keys with `[REDACTED]`
+- Custom logger
 - Object sanitization that masks sensitive fields before display
 
 #### 3. Access Prevention

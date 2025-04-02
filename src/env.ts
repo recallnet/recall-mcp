@@ -1,122 +1,147 @@
-// env.ts - Enhanced to support both direct environment variables and .env file as fallback
-import { config } from 'dotenv';
-import { fileURLToPath } from 'url';
+import sodium from 'sodium-native';
+import chalk from 'chalk';
+import { readFileSync } from 'fs';
 import { dirname, resolve } from 'path';
-import { existsSync } from 'fs';
+import { createHash } from 'crypto';
+import { fileURLToPath } from 'url';
 
-// Only log a debug message
-if (process.env.DEBUG) {
-  console.error('Starting environment setup...');
+// Define types for configuration variables
+interface Config {
+  RECALL_NETWORK: string;
 }
 
-// Check if the required environment variables are already set (from Cursor/Claude/Windsurf config)
-const hasRequiredEnvVars = !!process.env.RECALL_PRIVATE_KEY;
+// Define logger interface
+interface Logger {
+  error: (...args: any[]) => void;
+  warn: (...args: any[]) => void;
+  info: (...args: any[]) => void;
+}
 
-// Only attempt to load .env file if required variables are not already set
-if (!hasRequiredEnvVars) {
-  // Get the directory of the current module
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-
-  // Try to find and load the .env file from various possible locations
-  const envPaths = [
-    resolve(process.cwd(), '.env'),
-    resolve(__dirname, '../.env'),
-    resolve(__dirname, '../../.env')
-  ];
-
-  let loaded = false;
-  for (const path of envPaths) {
-    if (existsSync(path)) {
-      config({ path });
-      loaded = true;
-      if (process.env.DEBUG) {
-        console.error(`Loaded environment from .env file at: ${path}`);
-      }
-      break;
+// Redaction function with type safety
+const redactSensitive = (input: any): any => {
+  if (typeof input === 'string') {
+    return input
+      .replace(/[0-9a-fA-F]{64}/g, '[REDACTED_KEY]') // Hex keys
+      .replace(/[^=&\s]{32,}/g, '[REDACTED_LONG_VALUE]') // Long strings
+      .replace(/(private_key|secret|key|token|password)=([^&\s]+)/gi, '$1=[REDACTED]');
+  }
+  if (input && typeof input === 'object') {
+    const sanitized: Record<string, any> = {};
+    for (const [key, value] of Object.entries(input)) {
+      sanitized[key] = key.toLowerCase().includes('key') || key.toLowerCase().includes('secret')
+        ? '[REDACTED]'
+        : redactSensitive(value);
     }
+    return sanitized;
+  }
+  return input;
+};
+
+// Custom logger implementation
+export const logger: Logger = {
+  error: (...args: any[]) => process.stderr.write(`${chalk.red('[ERROR]')} ${args.map(redactSensitive).join(' ')}\n`),
+  warn: (...args: any[]) => process.stderr.write(`${chalk.yellow('[WARN]')} ${args.map(redactSensitive).join(' ')}\n`),
+  info: (...args: any[]) => process.stderr.write(`${chalk.blue('[INFO]')} ${args.map(redactSensitive).join(' ')}\n`),
+};
+
+// Secure secret storage
+let secretBuffer: sodium.SecureBuffer | null = null;
+let secretLoaded: boolean = false;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const ENV_FILE_PATH: string = resolve(__dirname, '..', '.env');
+const EXPECTED_ENV_HASH: string | null = process.env.ENV_FILE_HASH || null; // Optional integrity hash
+
+// Load secrets with priority: external env > .env file
+const loadSecrets = (): void => {
+  if (secretLoaded) return;
+
+  // Check external environment first
+  const externalKey: string | undefined = process.env.RECALL_PRIVATE_KEY;
+  if (externalKey) {
+    secretBuffer = sodium.sodium_malloc(externalKey.length) as sodium.SecureBuffer;
+    secretBuffer.write(externalKey);
+    sodium.sodium_mlock(secretBuffer); // Lock memory to prevent swapping
+    process.env.RECALL_PRIVATE_KEY = '[REDACTED]'; // Redact immediately
+    logger.info('Using RECALL_PRIVATE_KEY from external environment variables.');
+    secretLoaded = true;
+    return;
   }
 
-  if (!loaded && process.env.DEBUG) {
-    console.error('No .env file found. Using environment variables directly.');
-  }
-} else if (process.env.DEBUG) {
-  console.error('Using environment variables from configuration.');
-}
-
-// Sanitize sensitive environment variables for logging and display
-export function sanitizeSecrets(obj: Record<string, any>) {
-  const result = { ...obj };
-  
-  // Keys that should be considered sensitive and redacted
-  const sensitiveKeys = [
-    'private_key', 'privatekey', 'secret', 'password', 'pass', 'key',
-    'token', 'auth', 'credential', 'sign', 'encrypt'
-  ];
-  
-  for (const key in result) {
-    const lowerKey = key.toLowerCase();
-    
-    // Check if this is a sensitive key
-    if (sensitiveKeys.some(sk => lowerKey.includes(sk)) && typeof result[key] === 'string') {
-      const value = result[key] as string;
-      if (value.length > 8) {
-        // Show only the first 4 and last 4 characters if long enough
-        result[key] = `${value.substring(0, 4)}...${value.substring(value.length - 4)}`;
-      } else {
-        // For shorter values, just show ****
-        result[key] = '********';
+  // Fall back to .env file
+  try {
+    const envContent: string = readFileSync(ENV_FILE_PATH, 'utf8');
+    // Optional: Verify integrity with a precomputed hash
+    if (EXPECTED_ENV_HASH) {
+      const computedHash: string = createHash('sha256').update(envContent).digest('hex');
+      if (computedHash !== EXPECTED_ENV_HASH) {
+        throw new Error('Integrity check failed: .env file hash does not match expected value.');
       }
     }
+
+    const envVars: Record<string, string> = envContent.split('\n').reduce((acc, line) => {
+      const [key, value] = line.split('=');
+      if (key && value) acc[key.trim()] = value.trim();
+      return acc;
+    }, {} as Record<string, string>);
+
+    const envKey: string | undefined = envVars.RECALL_PRIVATE_KEY;
+    if (!envKey) {
+      throw new Error('RECALL_PRIVATE_KEY not found in .env file.');
+    }
+
+    secretBuffer = sodium.sodium_malloc(envKey.length) as sodium.SecureBuffer;
+    secretBuffer.write(envKey);
+    sodium.sodium_mlock(secretBuffer); // Lock memory to prevent swapping
+    process.env.RECALL_PRIVATE_KEY = '[REDACTED]';
+    logger.info(`Loaded RECALL_PRIVATE_KEY from .env file at: ${ENV_FILE_PATH}`);
+    secretLoaded = true;
+  } catch (error: unknown) {
+    const message: string = error instanceof Error ? error.message : String(error);
+    logger.error(`Failed to load .env: ${message}`);
+    throw new Error(`Cannot proceed without RECALL_PRIVATE_KEY: ${message}`);
   }
-  
-  return result;
+};
+
+// Initialize secrets
+loadSecrets();
+
+// Export configuration object using Config interface
+export const config: Config = {
+  RECALL_NETWORK: process.env.RECALL_NETWORK || 'testnet',
+};
+
+// Secure private key access
+export function getPrivateKey(): string {
+  if (!secretBuffer) {
+    throw new Error('RECALL_PRIVATE_KEY is required but not available.');
+  }
+
+  const key: string = secretBuffer.toString('utf8');
+  sodium.sodium_memzero(secretBuffer); // Zero out immediately after use
+  sodium.sodium_munlock(secretBuffer); // Unlock and zero memory
+  secretBuffer = null;
+  secretLoaded = false; // Force reload if needed again
+  return key;
 }
 
-// Verify that required environment variables are set
-export function validateEnv() {
-  const requiredVars = ['RECALL_PRIVATE_KEY'];
-  const recommendedVars = ['RECALL_NETWORK'];
-  
-  // Check for required variables
-  const missingVars = requiredVars.filter(varName => !process.env[varName]);
-  
-  if (missingVars.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+// Validate environment
+export function validateEnv(): void {
+  if (!secretLoaded && !secretBuffer) {
+    throw new Error('Missing required RECALL_PRIVATE_KEY. Provide it via environment variables or .env.');
   }
-  
-  // Check for recommended variables
-  const missingRecommended = recommendedVars.filter(varName => !process.env[varName]);
-  
-  if (missingRecommended.length > 0 && process.env.DEBUG) {
-    console.warn(`Missing recommended environment variables: ${missingRecommended.join(', ')}. Using defaults.`);
+  const recommendedVars: (keyof Config)[] = ['RECALL_NETWORK'];
+  const missing: string[] = recommendedVars.filter((v) => !process.env[v]);
+  if (missing.length > 0) {
+    logger.warn(`Missing recommended variables: ${missing.join(', ')}. Using defaults.`);
   }
-  
-  // Set up security for console output
-  const originalConsoleError = console.error;
-  const originalConsoleWarn = console.warn;
-  
-  const redactPrivateKeys = (args: any[]) => {
-    return args.map(arg => {
-      if (typeof arg === 'string') {
-        return arg.replace(/0x[a-fA-F0-9]{64}/g, '[REDACTED_PRIVATE_KEY]')
-                  .replace(/(RECALL_PRIVATE_KEY|private_key|privatekey)=([^&\s]+)/gi, '$1=[REDACTED]');
-      } else if (arg && typeof arg === 'object') {
-        try {
-          return sanitizeSecrets(arg);
-        } catch (e) {
-          return arg;
-        }
-      }
-      return arg;
-    });
-  };
-  
-  console.error = (...args: any[]) => {
-    originalConsoleError(...redactPrivateKeys(args));
-  };
-  
-  console.warn = (...args: any[]) => {
-    originalConsoleWarn(...redactPrivateKeys(args));
-  };
+}
+
+// Setup logging and status
+export function logConfigStatus(): void {
+  validateEnv();
+  logger.info('Configuration loaded:');
+  logger.info(`  • Source: ${secretLoaded ? (process.env.RECALL_PRIVATE_KEY === '[REDACTED]' ? 'external' : '.env') : 'none'}`);
+  logger.info(`  • Network: ${config.RECALL_NETWORK}`);
+  logger.info(`  • Private Key: ${secretBuffer ? '[PROVIDED]' : '[MISSING]'}`);
 }
