@@ -11,9 +11,9 @@
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "1.0.1",
-        "@recallnet/chains": "^0.0.6",
         "sodium-native": "^4.3.3",
-        "@recallnet/sdk": "^0.0.7",
+        "@recallnet/chains": "^0.0.7",
+        "@recallnet/sdk": "^0.0.8",
         "dotenv": "^16.3.1",
         "viem": "^2.22.9",
         "zod": "^3.24.1"
