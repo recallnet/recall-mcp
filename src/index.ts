@@ -10,6 +10,19 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { RecallClientManager } from "./recall-client.js";
 import { Address } from "viem";
+import { ToolManager } from "./tool-manager.js";
+import { z } from "zod"; 
+
+// Configuration for the dynamic tools bucket
+const TOOLS_BUCKET_ALIAS = "mcp-dynamic-tools";
+let toolsBucketAddress: Address | null = null;
+let toolManager: ToolManager | null = null;
+
+// Keep track of dynamically loaded tools
+const dynamicTools: Map<string, {
+  tool: Tool,
+  implementation: Function
+}> = new Map();
 
 // Create an MCP server instance using the Server class
 const server = new Server(
@@ -171,18 +184,273 @@ const RECALL_TOOLS: Tool[] = [
       additionalProperties: false,
       $schema: "http://json-schema.org/draft-07/schema#"
     }
+  },
+  // New tools for managing functions in Recall
+  {
+    name: "store_tool_function",
+    description: "Store a function with its parameters in Recall for dynamic execution",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool function",
+          minLength: 1
+        },
+        description: {
+          type: "string",
+          description: "Description of what the tool does"
+        },
+        functionBody: {
+          type: "string",
+          description: "JavaScript function body as a string",
+          minLength: 1
+        },
+        parameters: {
+          type: "object",
+          description: "Parameter definitions with types and descriptions",
+          additionalProperties: {
+            type: "object",
+            properties: {
+              type: {
+                type: "string",
+                enum: ["string", "number", "boolean", "object", "array"]
+              },
+              description: {
+                type: "string"
+              },
+              required: {
+                type: "boolean",
+                default: true
+              }
+            },
+            required: ["type"]
+          }
+        }
+      },
+      required: ["name", "functionBody", "parameters"],
+      additionalProperties: false,
+      $schema: "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  {
+    name: "store_tool_template",
+    description: "Store a templated tool in Recall for dynamic execution",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: {
+          type: "string",
+          description: "Name of the tool function",
+          minLength: 1
+        },
+        description: {
+          type: "string",
+          description: "Description of what the tool does"
+        },
+        templateType: {
+          type: "string",
+          description: "Type of template (api_call, transformation)",
+          enum: ["api_call", "transformation"]
+        },
+        config: {
+          type: "object",
+          description: "Configuration for the template"
+        },
+        parameters: {
+          type: "object",
+          description: "Parameter definitions with types and descriptions",
+          additionalProperties: {
+            type: "object",
+            properties: {
+              type: {
+                type: "string",
+                enum: ["string", "number", "boolean", "object", "array"]
+              },
+              description: {
+                type: "string"
+              },
+              required: {
+                type: "boolean",
+                default: true
+              }
+            },
+            required: ["type"]
+          }
+        }
+      },
+      required: ["name", "templateType", "config", "parameters"],
+      additionalProperties: false,
+      $schema: "http://json-schema.org/draft-07/schema#"
+    }
+  },
+  {
+    name: "list_dynamic_tools",
+    description: "List all dynamically stored tools in Recall",
+    inputSchema: {
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+      $schema: "http://json-schema.org/draft-07/schema#"
+    }
   }
 ];
 
+// Initialize the tool manager and load dynamic tools
+async function initializeToolManager() {
+  try {
+    // Get or create a bucket for storing tool functions
+    toolsBucketAddress = await recallClient.getOrCreateBucket(TOOLS_BUCKET_ALIAS);
+    
+    if (!toolsBucketAddress) {
+      logger.error("Failed to initialize tools bucket");
+      return;
+    }
+    
+    // Initialize the tool manager
+    toolManager = new ToolManager(toolsBucketAddress);
+    
+    // Load all stored tools
+    await loadDynamicTools();
+    
+    logger.info(`Tool manager initialized with bucket: ${toolsBucketAddress}`);
+  } catch (error: any) {
+    logger.error(`Error initializing tool manager: ${error.message}`);
+    if (error.cause) {
+      logger.error(`Cause: ${error.cause}`);
+    }
+  }
+}
+
+// Load all dynamic tools from Recall
+async function loadDynamicTools() {
+  if (!toolManager) {
+    logger.error("Tool manager not initialized");
+    return;
+  }
+  
+  try {
+    const toolNames = await toolManager.listTools();
+    logger.info(`Found ${toolNames.length} dynamic tools`);
+    
+    // Clear existing dynamic tools map before reloading
+    dynamicTools.clear();
+    
+    for (const toolName of toolNames) {
+      try {
+        // Load the tool
+        const loadedTool = await toolManager.loadTool(toolName);
+        
+        // Convert Zod schema to JSON Schema for MCP
+        const schemaProperties: Record<string, any> = {};
+        const requiredParams: string[] = [];
+        
+        for (const [key, validator] of Object.entries(loadedTool.schema)) {
+          // Determine the type from Zod validator
+          let type = "string"; // Default
+          
+          if (validator instanceof z.ZodString) {
+            type = "string";
+          } else if (validator instanceof z.ZodNumber) {
+            type = "number";
+          } else if (validator instanceof z.ZodBoolean) {
+            type = "boolean";
+          } else if (validator instanceof z.ZodArray) {
+            type = "array";
+          } else if (validator instanceof z.ZodObject) {
+            type = "object";
+          }
+          
+          // Get description if available
+          const description = validator.description || undefined;
+          
+          // Add to schema properties
+          schemaProperties[key] = {
+            type,
+            ...(description ? { description } : {})
+          };
+          
+          // Check if required
+          if (!validator.isOptional()) {
+            requiredParams.push(key);
+          }
+        }
+        
+        // Create MCP tool definition
+        const toolDefinition: Tool = {
+          name: loadedTool.name,
+          description: `Dynamic tool: ${loadedTool.name}`,
+          inputSchema: {
+            type: "object",
+            properties: schemaProperties,
+            ...(requiredParams.length > 0 ? { required: requiredParams } : {}),
+            additionalProperties: false,
+            $schema: "http://json-schema.org/draft-07/schema#"
+          }
+        };
+        
+        // Add to dynamic tools map
+        dynamicTools.set(toolName, {
+          tool: toolDefinition,
+          implementation: loadedTool.implementation
+        });
+        
+        logger.info(`Loaded dynamic tool: ${toolName}`);
+      } catch (error: any) {
+        logger.error(`Error loading tool ${toolName}: ${error.message}`);
+        // Add more detailed error info if available
+        if (error.cause) {
+          logger.error(`Cause: ${error.cause}`);
+        }
+      }
+    }
+  } catch (error: any) {
+    logger.error(`Error loading dynamic tools: ${error.message}`);
+    if (error.cause) {
+      logger.error(`Cause: ${error.cause}`);
+    }
+  }
+}
+
 // Register tool handlers
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
-  tools: RECALL_TOOLS
+  tools: [
+    ...RECALL_TOOLS,
+    ...Array.from(dynamicTools.values()).map(entry => entry.tool)
+  ]
 }));
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     const { name, arguments: args } = request.params;
 
+    // Check if it's a dynamic tool
+    if (dynamicTools.has(name)) {
+      try {
+        const dynamicTool = dynamicTools.get(name);
+        if (!dynamicTool) {
+          throw new Error(`Dynamic tool ${name} not found`);
+        }
+        
+        // Execute the dynamic tool
+        const result = await dynamicTool.implementation(args || {});
+        
+        return {
+          content: [
+            {
+              type: "text",
+              text: typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result),
+            },
+          ],
+          isError: false,
+        };
+      } catch (error: any) {
+        logger.error(`Error executing dynamic tool ${name}:`, error);
+        throw error;
+      }
+    }
+
+    // Otherwise, handle built-in tools
     switch (name) {
       case "get_account": {
         try {
@@ -349,7 +617,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         try {
           const bucket = args.bucket as string;
           const key = args.key as string;
-          const data = await recallClient.getObject(bucket as Address, key);
+          const data = await recallClient.getObjectAsString(bucket as Address, key);
           
           return {
             content: [
@@ -445,6 +713,218 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      // New handlers for dynamic tool management
+      case "store_tool_function": {
+        if (!toolManager) {
+          throw new Error("Tool manager not initialized");
+        }
+
+        if (!args || typeof args !== "object" || !("name" in args) || !("functionBody" in args) || !("parameters" in args)) {
+          throw new Error("Invalid arguments for store_tool_function");
+        }
+        
+        try {
+          const name = args.name as string;
+          const functionBodyStr = args.functionBody as string;
+          const parametersObj = args.parameters as Record<string, any>;
+          const description = (args.description as string) || "";
+          
+          // Create a Function from the string (will be serialized later)
+          let functionImplementation: Function;
+          try {
+            functionImplementation = new Function(`return ${functionBodyStr}`)();
+          } catch (error) {
+            throw new Error(`Invalid function body: ${error}`);
+          }
+          
+          // Convert parameters to Zod schema
+          const zodSchema: Record<string, z.ZodTypeAny> = {};
+          
+          for (const [key, paramInfo] of Object.entries(parametersObj)) {
+            if (typeof paramInfo !== 'object' || !paramInfo) {
+              throw new Error(`Invalid parameter definition for ${key}`);
+            }
+            
+            const { type, description, required } = paramInfo as { type: string, description?: string, required?: boolean };
+            
+            let validator: z.ZodTypeAny;
+            
+            switch (type) {
+              case "string":
+                validator = z.string();
+                break;
+              case "number":
+                validator = z.number();
+                break;
+              case "boolean":
+                validator = z.boolean();
+                break;
+              case "array":
+                validator = z.array(z.any());
+                break;
+              case "object":
+                validator = z.object({});
+                break;
+              default:
+                validator = z.any();
+            }
+            
+            if (description) {
+              validator = validator.describe(description);
+            }
+            
+            if (required === false) {
+              validator = validator.optional();
+            }
+            
+            zodSchema[key] = validator;
+          }
+          
+          // Store the tool
+          await toolManager.storeTool(name, zodSchema, functionImplementation);
+          
+          // Reload all dynamic tools
+          await loadDynamicTools();
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  success: true,
+                  message: `Tool function '${name}' stored successfully`,
+                  toolName: name
+                }, null, 2),
+              },
+            ],
+            isError: false,
+          };
+        } catch (error: any) {
+          logger.error('Error in store_tool_function:', error);
+          throw error;
+        }
+      }
+
+      case "store_tool_template": {
+        if (!toolManager) {
+          throw new Error("Tool manager not initialized");
+        }
+
+        if (!args || 
+            typeof args !== "object" || 
+            !("name" in args) || 
+            !("templateType" in args) || 
+            !("config" in args) || 
+            !("parameters" in args)) {
+          throw new Error("Invalid arguments for store_tool_template");
+        }
+        
+        try {
+          const name = args.name as string;
+          const templateType = args.templateType as string;
+          const config = args.config as Record<string, any>;
+          const parametersObj = args.parameters as Record<string, any>;
+          const description = (args.description as string) || "";
+          
+          // Convert parameters to Zod schema
+          const zodSchema: Record<string, z.ZodTypeAny> = {};
+          
+          for (const [key, paramInfo] of Object.entries(parametersObj)) {
+            if (typeof paramInfo !== 'object' || !paramInfo) {
+              throw new Error(`Invalid parameter definition for ${key}`);
+            }
+            
+            const { type, description, required } = paramInfo as { type: string, description?: string, required?: boolean };
+            
+            let validator: z.ZodTypeAny;
+            
+            switch (type) {
+              case "string":
+                validator = z.string();
+                break;
+              case "number":
+                validator = z.number();
+                break;
+              case "boolean":
+                validator = z.boolean();
+                break;
+              case "array":
+                validator = z.array(z.any());
+                break;
+              case "object":
+                validator = z.object({});
+                break;
+              default:
+                validator = z.any();
+            }
+            
+            if (description) {
+              validator = validator.describe(description);
+            }
+            
+            if (required === false) {
+              validator = validator.optional();
+            }
+            
+            zodSchema[key] = validator;
+          }
+          
+          // Store the templated tool
+          await toolManager.storeTemplatedTool(name, zodSchema, templateType, config);
+          
+          // Reload all dynamic tools
+          await loadDynamicTools();
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  success: true,
+                  message: `Templated tool '${name}' stored successfully`,
+                  toolName: name
+                }, null, 2),
+              },
+            ],
+            isError: false,
+          };
+        } catch (error: any) {
+          logger.error('Error in store_tool_template:', error);
+          throw error;
+        }
+      }
+
+      case "list_dynamic_tools": {
+        if (!toolManager) {
+          throw new Error("Tool manager not initialized");
+        }
+        
+        try {
+          const toolNames = await toolManager.listTools();
+          
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  tools: Array.from(dynamicTools.keys()).map(name => {
+                    const dynamicTool = dynamicTools.get(name);
+                    return {
+                      name,
+                      description: dynamicTool?.tool.description || "Dynamic tool"
+                    };
+                  })
+                }, null, 2),
+              },
+            ],
+            isError: false,
+          };
+        } catch (error: any) {
+          logger.error('Error in list_dynamic_tools:', error);
+          throw error;
+        }
+      }
+
       default:
         return {
           content: [{ type: "text", text: `Unknown tool: ${name}` }],
@@ -475,9 +955,16 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => {
 
 // Start the server using stdio transport
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-  logger.error("Recall MCP Server running on stdio");
+  try {
+    // Initialize the tool manager before starting the server
+    await initializeToolManager();
+    
+    const transport = new StdioServerTransport();
+    await server.connect(transport);
+    logger.error("Recall MCP Server running on stdio");
+  } catch (error: any) {
+    logger.error(`Failed to start server: ${error.message}`);
+  }
 }
 
 main().catch(logger.error);
